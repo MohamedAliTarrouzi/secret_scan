@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from app.services.scan_orchestrator import orchestrate_scan
 
@@ -11,13 +11,22 @@ class ScanRequest(BaseModel):
     content: str | None = None
     
 @router.post("/scan")
-def run_scan(payload: ScanRequest):
+async def run_scan(payload: ScanRequest | None = None, file: UploadFile | None = None ):
     try:
-        findings = orchestrate_scan(payload.target, content=payload.content)
+        if file is not None:
+            contents = await file.read()
+            temp_path = f"/tmp/{file.filename}"
+            with open(temp_path,"wb") as f:
+                f.write(contents)
+            findings = orchestrate_scan(temp_path)
+        else:
+            if payload is None:
+                raise ValueError("Aucoun donnée fournie.")
+            findings = orchestrate_scan(payload.target, content=payload.content)
         
         result = {
             "status": "success",
-            "target":payload.target,
+            "target":payload.target if payload else file.filename,
             "findings": findings,
             "summary":{
                 "total": len(findings),
