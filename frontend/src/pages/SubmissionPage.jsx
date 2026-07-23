@@ -50,7 +50,7 @@ export default function SubmissionPage() {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(),
+            body: JSON.stringify(payload),
           },
         );
         const json = await resp.json();
@@ -78,8 +78,7 @@ export default function SubmissionPage() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
-        {mode ===
-          "code"(
+        {mode === "code" && (
             <div>
               <label>Coller votre code</label>
               <textarea
@@ -89,15 +88,16 @@ export default function SubmissionPage() {
                 className="w-full p-2 border"
                 placeholder="Collez le code à analyser..."
               />
-            </div>,
-          )}
+            </div>
+          )
+          }
 
         {mode === "url" && (
           <div>
             <label>URL du repo Git</label>
             <input
               type="url"
-              value={reportUrl}
+              value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               className="w-full p-2 border"
               placeholder="https://github.com/owner/repo"
