@@ -8,11 +8,12 @@ history_store = []
 
 class ScanRequest(BaseModel):
     target: str
+    content: str | None = None
     
 @router.post("/scan")
 def run_scan(payload: ScanRequest):
     try:
-        findings = orchestrate_scan(payload.target)
+        findings = orchestrate_scan(payload.target, content=payload.content)
         
         result = {
             "status": "success",
