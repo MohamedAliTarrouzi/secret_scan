@@ -5,6 +5,6 @@ const api = axios.create({
 })
 
 export const runScan = (target) => api.post("/scan",{target})
-export const getHistory = () => aî.get("/history")
+export const getHistory = () => api.get("/history")
 
 export default api

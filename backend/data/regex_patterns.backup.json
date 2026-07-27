@@ -1,0 +1,126 @@
+[
+  {
+    "name": "AWS Access Key ID",
+    "category": "Cloud credentials",
+    "regex": "\\b(AKIA|ASCA|AGPA|AIDA)[0-9A-Z]{16}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Clé d'accès AWS (Access Key ID) permettant d'authentifier les requêtes API."
+  },
+  {
+    "name": "AWS Secret Access Key",
+    "category": "Cloud credentials",
+    "regex": "\\b[A-Za-z0-9/+=]{40}\\b",
+    "severity": "Moyen",
+    "confidence": 0.5,
+    "description": "Clé d'accès secrète AWS (Secret Access Key) potentielle."
+  },
+  {
+    "name": "Azure SAS Token",
+    "category": "Cloud credentials",
+    "regex": "\\bsig=[A-Za-z0-9%]{40,}\\b",
+    "flags": "IGNORECASE",
+    "severity": "Critique",
+    "confidence": 0.9,
+    "description": "Shared Access Signature (SAS) Token Azure pour l'accès au stockage."
+  },
+  {
+    "name": "GCP API Key",
+    "category": "Cloud credentials",
+    "regex": "\\bAIza[0-9A-Za-z-_]{35}\\b",
+    "severity": "Critique",
+    "confidence": 0.95,
+    "description": "Clé d'API Google Cloud Platform (GCP)."
+  },
+  {
+    "name": "GitHub Personal Access Token (Classic)",
+    "category": "API tokens",
+    "regex": "\\bghp_[a-zA-Z0-9]{36}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Token d'accès personnel GitHub (Classique)."
+  },
+  {
+    "name": "GitHub Personal Access Token (Fine-grained)",
+    "category": "API tokens",
+    "regex": "\\bgithub_pat_[a-zA-Z0-9]{82}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Token d'accès personnel GitHub à granularité fine."
+  },
+  {
+    "name": "GitLab Personal Access Token",
+    "category": "API tokens",
+    "regex": "\\bglpat-[a-zA-Z0-9\\-]{20}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Token d'accès personnel GitLab."
+  },
+  {
+    "name": "Stripe API Key",
+    "category": "API tokens",
+    "regex": "\\b(sk|rk)_(test|live)_[0-9a-zA-Z]{24,}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Clé API Stripe (secrète ou restreinte)."
+  },
+  {
+    "name": "Slack Webhook URL",
+    "category": "API tokens",
+    "regex": "https://hooks\\.slack\\.com/services/T[A-Z0-9_]{8,11}/B[A-Z0-9_]{8,11}/[A-Za-z0-9_]{24}",
+    "flags": "IGNORECASE",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "URL de Webhook Slack entrante exposée."
+  },
+  {
+    "name": "Discord Bot Token",
+    "category": "API tokens",
+    "regex": "\\b[MN][A-Za-z0-9\\-_]{23,25}\\.[A-Za-z0-9\\-_]{6}\\.[A-Za-z0-9\\-_]{27,38}\\b",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Token d'authentification de Bot Discord."
+  },
+  {
+    "name": "Heroku API Key",
+    "category": "API tokens",
+    "regex": "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b",
+    "severity": "Moyen",
+    "confidence": 0.6,
+    "description": "Clé d'API Heroku potentielle."
+  },
+  {
+    "name": "Private Key Header",
+    "category": "Authentification",
+    "regex": "-----BEGIN (?P<type>[A-Z ]+) PRIVATE KEY-----",
+    "severity": "Critique",
+    "confidence": 1.0,
+    "description": "Début d'un bloc de clé privée SSH, RSA, PGP ou EC."
+  },
+  {
+    "name": "JSON Web Token (JWT)",
+    "category": "Authentification",
+    "regex": "\\beyJ[A-Za-z0-9-_=]+\\eyJ[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*\\b",
+    "severity": "Moyen",
+    "confidence": 0.8,
+    "description": "Token de session JSON Web Token (JWT) complet."
+  },
+  {
+    "name": "Database Connection String",
+    "category": "Générique",
+    "regex": "\\b(mongodb(?:\\+srv)?|postgresql|postgres|mysql|redis|sqlite)://[A-Za-z0-9-_]+:[^@\\s]+@[A-Za-z0-9.-]+(?::\\d+)?/?[a-zA-Z0-9-_]*\\b",
+    "flags": "IGNORECASE",
+    "severity": "Critique",
+    "confidence": 0.95,
+    "description": "Chaîne de connexion de base de données avec identifiants."
+  },
+  {
+    "name": "Generic Password Assignment",
+    "category": "Générique",
+    "regex": "\\b(?:pwd|password|passwd|pass|secret|client_secret|db_password|db_pass)\\s*[:=]\\s*['\"]([^'\"\\s]{5,})['\"]",
+    "flags": "IGNORECASE",
+    "severity": "Moyen",
+    "confidence": 0.6,
+    "description": "Assignation de mot de passe ou clé secrète en dur."
+  }
+]
