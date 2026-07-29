@@ -4,6 +4,8 @@ export default function ResultsPage({ result, onBack, onOpenHistory }) {
   if (!result) {
     return null
   }
+  
+  const summary = result.summary || {}
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -37,24 +39,32 @@ export default function ResultsPage({ result, onBack, onOpenHistory }) {
           </div>
         </div>
 
-        <div className="mb-6 grid gap-3 md:grid-cols-3">
+        <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/70 p-4">
+         <p className="font-semibold text-white">
+          {result.pipeline_message||"Aucun message"}
+         </p>
+        </div>
+
+        <div className="mb-6 grid gap-3 md:grid-cols-5">
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-            <p className="text-sm text-slate-400">Total</p>
-            <p className="text-2xl font-semibold text-white">
-              {result.summary?.total || 0}
-            </p>
+           <p className="text-sm text-slate-400">Total</p>
+           <p className="text-2xl font-semibold text-white">{summary.total || 0}</p>
           </div>
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-            <p className="text-sm text-slate-400">Critiques</p>
-            <p className="text-2xl font-semibold text-red-400">
-              {result.summary?.critical || 0}
-            </p>
+           <p className="text-sm text-slate-400">Critiques</p>
+           <p className="text-2xl font-semibold text-red-400">{summary.critical || 0}</p>
           </div>
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
             <p className="text-sm text-slate-400">Moyens</p>
-            <p className="text-2xl font-semibold text-amber-400">
-              {result.summary?.medium || 0}
-            </p>
+            <p className="text-2xl font-semibold text-amber-400">{summary.medium || 0}</p>
+          </div>
+          <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
+            <p className="text-sm text-slate-400">Faibles</p>
+            <p className="text-2xl font-semibold text-blue-400">{summary.low || 0}</p>
+          </div>
+          <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
+            <p className="text-sm text-slate-400">Ambiguës</p>
+            <p className="text-2xl font-semibold text-purple-400">{summary.ambiguous || 0}</p>
           </div>
         </div>
 
@@ -73,6 +83,11 @@ export default function ResultsPage({ result, onBack, onOpenHistory }) {
                   <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-sm text-red-300">
                     {item.severity}
                   </span>
+                  {item.review_required && (
+                    <span className="rounded-full bg-purple-500/10 px-2.5 py-1 text-sm text-purple-300">
+                      Review LLM
+                    </span>
+                  )}
                   <span className="text-sm text-slate-400">{item.category}</span>
                   <span className="text-sm text-slate-400">
                     {item.file_path}:{item.line}

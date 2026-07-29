@@ -4,6 +4,7 @@ import { Shield, CheckCircle, Search, History as HistoryIcon } from "lucide-reac
 import SubmissionPage from "./pages/SubmissionPage"
 import ResultsPage from "./pages/ResultsPage"
 import HistoryPage from "./pages/HistoryPage"
+import RegexPatternsPage from "./pages/RegexPatternsPages"
 import { getHistory } from "./services/api"
 
 export default function App() {
@@ -43,7 +44,12 @@ export default function App() {
               <Search className="h-4 w-4" />
               Soumission
             </button>
-
+            <button
+             onClick={() => setView("regex")}
+             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            >
+              Regex
+            </button>
             <button
               onClick={() => {
                 setView("history")
@@ -97,6 +103,8 @@ export default function App() {
             onBack={() => setView("submission")}
           />
         )}
+
+        {view === "regex" && <RegexPatternsPage />}
       </main>
     </div>
   )
