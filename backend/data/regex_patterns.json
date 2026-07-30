@@ -100,7 +100,7 @@
   {
     "name": "JSON Web Token (JWT)",
     "category": "Authentification",
-    "regex": "\\beyJ[A-Za-z0-9-_=]+\\eyJ[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*\\b",
+    "regex": "\\beyJ[A-Za-z0-9-_=]+eyJ[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*\\b",
     "severity": "Moyen",
     "confidence": 0.8,
     "description": "Token de session JSON Web Token (JWT) complet."

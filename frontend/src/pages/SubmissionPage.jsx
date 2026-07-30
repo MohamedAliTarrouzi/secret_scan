@@ -31,7 +31,7 @@ export default function SubmissionPage() {
         fd.append("file", zipFile);
         //endpoint: POST /api/scan ; backend must accept multipart or adapt later
         const resp = await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/scan`,
+          `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/scan/upload`,
           {
             method: "POST",
             body: fd,

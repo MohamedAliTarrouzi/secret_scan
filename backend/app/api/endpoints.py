@@ -1,4 +1,5 @@
 import json
+import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
@@ -21,58 +22,84 @@ class ScanRequest(BaseModel):
 class RegexPatternsPayload(BaseModel):
     patterns: list[dict]
 
-@router.post("/scan")
-async def run_scan(payload: ScanRequest | None = None, file: UploadFile | None = None ):
-    try:
-        if file is not None:
-            contents = await file.read()
-            temp_path = f"/tmp/{file.filename}"
-            with open(temp_path,"wb") as f:
-                f.write(contents)
-            findings = orchestrate_scan(temp_path)
-            target_name = file.filename
-        else:
-            if payload is None:
-                raise ValueError("Aucune donnée fournie.")
-            
-            if payload.target == "inline":
-                if not payload.content:
-                    raise ValueError("Le contenue inline est vide")
-                findings = orchestrate_scan(payload.target, content=payload.content)
-            else:
-                findings = orchestrate_scan(payload.target)
-            
-            target_name = payload.target
-        
-        critical = sum(1 for item in findings if str(item.get("severity","")).lower() == "critical" )
-        medium = sum(1 for item in findings if str(item.get("severity","")).lower() == "medium" )
-        low = sum(1 for item in findings if str(item.get("severity","")).lower() == "low" )
-        ambiguous = sum(1 for item in findings if str(item.get("severity","")).lower() == "ambiguous")
-        
-        if critical > 0:
-            pipeline_message = "BLOCKED: critical findings detected"
-        elif medium > 0:
-             pipeline_message = "WARNING: medium findings detected"
-        else:
-             pipeline_message = "INFO: no blocking issue detected"
-        
-        result = {
-            "status": "success",
-            "target":target_name,
-            "findings": findings,
-            "summary":{
-                "total": len(findings),
-                "critical": critical,
-                "medium": medium,
-                "low": low,
-                "ambiguous": ambiguous,
-            },
-            "pipeline_message":pipeline_message,
-        }
-        
-        history_store.append(result)
-        return result
+def _build_scan_response(target_name: str, findings:list[dict])->dict:
+    critical = sum(
+        1 for item in findings 
+        if str(item.get("severity", "")).lower() in ("critique", "critical")
+    )
     
+    medium = sum(
+        1 for item in findings 
+        if str(item.get("severity", "")).lower() in ("moyen", "medium")
+    )
+    
+    low = sum(
+        1 for item in findings 
+        if str(item.get("severity", "")).lower() in ("faible", "low")
+    )
+    ambiguous = sum(
+        1 for item in findings 
+        if str(item.get("severity", "")).lower() in ("ambiguous", "ambigu", "ambiguë")
+    )
+    
+    if critical > 0:
+        pipeline_message = "BLOCKED: critical findings detected"
+    elif medium > 0:
+        pipeline_message = "WARNING: medium findings detected"
+    else:
+        pipeline_message = "INFO: no blocking issue detected"
+    
+    result = {
+        "status": "success",
+        "target": target_name,
+        "findings": findings,
+        "summary": {
+            "total": len(findings),
+            "critical": critical,
+            "medium": medium,
+            "low": low,
+            "ambiguous": ambiguous,
+        },
+        "pipeline_message": pipeline_message,
+    }
+    
+    history_store.append(result)
+    return result
+
+@router.post("/scan")
+async def run_scan(payload: ScanRequest):
+    try:
+        if payload.target == "inline":
+            if not payload.content:
+                raise ValueError("Le contenu inline est vide")
+            findings = orchestrate_scan("inline", content=payload.content)
+        else:
+            findings = orchestrate_scan(payload.target)
+            
+        return _build_scan_response(payload.target, findings)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc    
+
+@router.post("/scan/upload")
+async def run_scan_upload(file: UploadFile =  File(...)):
+    try:
+        contents = await file.read()
+        target_name = file.filename
+             
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=Path(target_name).suffix
+        ) as temp_file:
+            temp_file.write(contents)
+            temp_path=temp_file.name
+            
+        try:
+            findings = orchestrate_scan(temp_path)
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+
+        return _build_scan_response(target_name, findings)
+        
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     

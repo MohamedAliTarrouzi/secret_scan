@@ -5,7 +5,7 @@ export default function RegexPatternsPage() {
   const [message, setMessage] = useState("");
 
   const loadPatterns = async () => {
-    const response = await fetch("https://localhost:8000/api/regex-patterns");
+    const response = await fetch("http://localhost:8000/api/regex-patterns");
     const data = await response.json();
     setText(JSON.stringify(data.patterns, null, 2));
   };

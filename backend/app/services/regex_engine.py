@@ -77,7 +77,7 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
                     "confidence": pattern.get("confidence",0.5),
                     "context": line.strip(),
                     "description": pattern.get("description",""),
-                    "review_required": str(pattern.get("Severity","Medium")).lower() == "ambigious"
+                    "review_required": str(pattern.get("severity","Medium")).lower() == "ambiguous"
                 })
                 
     return findings
