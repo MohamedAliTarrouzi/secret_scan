@@ -119,12 +119,27 @@ def save_regex_patterns(payload: RegexPatternsPayload):
         
     return {"status":"saved"}
 
-@router.post("/regex-patterns/rewrite-backup")
-def rewrite_backup():
-    with open(ACTIVE_PATTERNS_PATH,"r",encoding="utf-8") as f:
-        active_patterns = json.load(f)
+@router.post("/regex-patterns/restore-backup")
+def restore_backup():
+    if not BACKUP_PATTERNS_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Le fichier de sauvegarde est introuvable."
+        )
     
-    with open(BACKUP_PATTERNS_PATH,"w",encoding="utf-8") as f:
-        json.dump(active_patterns, f, indent=2, ensure_ascii=False)
+    try:
+        with open(BACKUP_PATTERNS_PATH,"r",encoding="utf-8") as backup_file:
+            backup_patterns = json.load(backup_file)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Le fichier de sauvegarde contient un JSON invalide.",
+        ) from exc
+        
+    with open(ACTIVE_PATTERNS_PATH,"w",encoding="utf-8") as active_file:
+        json.dump(backup_patterns, active_file, indent=2, ensure_ascii=False)
     
-    return {"status":"backup_rewritten"}
+    return{
+        "status":"restored",
+        "patterns": backup_patterns,
+    }

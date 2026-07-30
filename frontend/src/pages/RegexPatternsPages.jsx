@@ -32,17 +32,29 @@ export default function RegexPatternsPage() {
     }
   };
 
-  const rewriteBackup = async () => {
-    const response = await fetch(
-      "http://localhost:8000/api/regex-patterns/rewrite-backup",
-      {
-        method: "POST",
-      },
-    );
-    const data = await response.json();
-    setMessage(
-      data.status === "backup_rewritten" ? "Backup réecrit" : "Erreur",
-    );
+  const restoreBackup = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/regex-patterns/restore-backup",
+        {
+          method: "POST",
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Impossible de restaurer le backup");
+      }
+
+      if (data.status === "restored") {
+        setText(JSON.stringify(data.patterns, null, 2));
+        setMessage("Backup restauré dans le fichier actif.");
+      } else {
+        setMessage("Erreur lors de la restoration.");
+      }
+    } catch (error) {
+      setMessage(error.message || "Erreur lors de la restauration. ");
+    }
   };
 
   return (
@@ -68,10 +80,10 @@ export default function RegexPatternsPage() {
         </button>
 
         <button
-          onClick={rewriteBackup}
+          onClick={restoreBackup}
           className="rounded-x1 bg-slate-700 px-4 py-2 text-white"
         >
-          Réécrire le backup
+          Restaurer le backup
         </button>
       </div>
       {message && <p className="mt-2 text-sm text-slate-300">{message}</p>}

@@ -114,7 +114,7 @@ Retourne les résultats de scans effectués depuis le démarrage de l'API. Cet h
 
 - `GET /api/regex-patterns` : retourne les 15 motifs actifs.
 - `POST /api/regex-patterns` : remplace le contenu de `backend/data/regex_patterns.json` avec `{ "patterns": [...] }`.
-- `POST /api/regex-patterns/rewrite-backup` : recopie les motifs actifs vers `backend/data/regex_patterns.backup.json`.
+- `POST /api/regex-patterns/restore-backup` : restaure le fichier actif depuis le fichier backup, sans modifier le backup.
 
 Les motifs sont chargés au démarrage du module Python : après modification par API, redémarrez le backend pour que les scans utilisent la nouvelle configuration. Le fichier de secours est actuellement identique au fichier actif.
 
