@@ -11,9 +11,9 @@
     "name": "AWS Secret Access Key",
     "category": "Cloud credentials",
     "regex": "\\b[A-Za-z0-9/+=]{40}\\b",
-    "severity": "Moyen",
+    "severity": "Ambiguous",
     "confidence": 0.5,
-    "description": "Clé d'accès secrète AWS (Secret Access Key) potentielle."
+    "description": "Clé d'accès secrète AWS (Secret Access Key) potentielle nécessitant une révision manuelle."
   },
   {
     "name": "Azure SAS Token",
@@ -85,9 +85,9 @@
     "name": "Heroku API Key",
     "category": "API tokens",
     "regex": "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b",
-    "severity": "Moyen",
+    "severity": "Ambiguous",
     "confidence": 0.6,
-    "description": "Clé d'API Heroku potentielle."
+    "description": "Clé d'API Heroku ou UUID générique (vérification manuelle requise)."
   },
   {
     "name": "Private Key Header",
@@ -119,8 +119,8 @@
     "category": "Générique",
     "regex": "\\b(?:pwd|password|passwd|pass|secret|client_secret|db_password|db_pass)\\s*[:=]\\s*['\"]([^'\"\\s]{5,})['\"]",
     "flags": "IGNORECASE",
-    "severity": "Moyen",
+    "severity": "Ambiguous",
     "confidence": 0.6,
-    "description": "Assignation de mot de passe ou clé secrète en dur."
+    "description": "Assignation de mot de passe ou clé secrète en dur (vérification requise)."
   }
 ]

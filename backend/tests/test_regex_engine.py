@@ -1,5 +1,5 @@
 import pytest
-from app.services.regex_engine import scan_content
+from app.services.regex_engine import scan_content, calculate_entropy
 
 def test_aws_access_key_detection():
     code = 'aws_key = "AKIAIOSFODNN7EXAMPLE"'
@@ -50,3 +50,14 @@ def test_no_secrets_detected_in_clean_code():
     """
     results = scan_content(code)
     assert len(results) == 0
+
+def test_entropy_of_empty_text():
+    assert calculate_entropy("") == 0.0
+
+
+def test_entropy_of_repeated_character():
+    assert calculate_entropy("aaaa") == 0.0
+
+
+def test_entropy_of_two_equally_likely_characters():
+    assert calculate_entropy("ab") == pytest.approx(1.0)

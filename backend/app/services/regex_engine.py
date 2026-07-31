@@ -1,7 +1,21 @@
 import json
+import math
 import re
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+def calculate_entropy(text:str) -> float:
+    """Calculate l'entropie de Shannon d'une chaîne."""
+    if not text:
+        return 0.0
+    
+    entropy = 0.0
+    for x in set(text):
+        p_x = float(text.count(x)/len(text))
+        entropy-=p_x * math.log2(p_x)
+        
+    return entropy
+
 ACTIVE_PATTERNS_PATH = BASE_DIR/"data"/"regex_patterns.json"
 BACKUP_PATTERNS_PATH = BASE_DIR/"data"/"regex_patterns.backup.json"
 
@@ -66,6 +80,8 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
                     # Ignore les valeurs factices d'exemples/placeholders
                     if detected_value.lower() in dummy_values:
                         continue
+                    
+                entropy = calculate_entropy(detected_value)
                 
                 findings.append({
                     "category": pattern["category"],
@@ -75,6 +91,7 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
                     "value": detected_value,
                     "severity": pattern.get("severity","Medium"),
                     "confidence": pattern.get("confidence",0.5),
+                    "entropy":round(entropy, 3),
                     "context": line.strip(),
                     "description": pattern.get("description",""),
                     "review_required": str(pattern.get("severity","Medium")).lower() == "ambiguous"

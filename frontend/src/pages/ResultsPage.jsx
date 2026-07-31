@@ -96,7 +96,7 @@ export default function ResultsPage({ result, onBack, onOpenHistory }) {
 
                 <p className="font-medium text-white">{item.name}</p>
                 <p className="mt-1 text-sm text-slate-300">{item.context}</p>
-
+                <p className="mt-1 text-sm text-slate-400">Entropie : {item.entropy}</p>
                 <div className="mt-3 flex items-center gap-2 text-sm text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
                   <span>{item.description}</span>
