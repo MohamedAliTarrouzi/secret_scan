@@ -61,3 +61,16 @@ def test_entropy_of_repeated_character():
 
 def test_entropy_of_two_equally_likely_characters():
     assert calculate_entropy("ab") == pytest.approx(1.0)
+    
+def test_finding_contains_entropy():
+    code = 'db_pass = "mySecret_123!"'
+
+    results = scan_content(code)
+
+    assert len(results) == 1
+    assert results[0]["entropy"] == pytest.approx(
+        calculate_entropy("mySecret_123!"),
+        abs=0.001,
+    )
+    
+    

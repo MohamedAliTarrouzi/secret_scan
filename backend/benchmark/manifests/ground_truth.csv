@@ -1,0 +1,24 @@
+repo,commit,file,line,expected_secret,expected_category,expected_name
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,4,true,Cloud credentials,AWS Access Key ID
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,5,true,Cloud credentials,AWS Secret Access Key
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,7,true,Cloud credentials,GCP Service Account Key (Base64 - Undetected by Regex)
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,9,true,Generic,Generic Password Assignment
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,11,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,12,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,13,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/cloud_config.py,16,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,4,true,API tokens,Stripe API Key
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,5,true,API tokens,GitHub Personal Access Token (Classic)
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,6,true,API tokens,Slack Webhook URL
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,9,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,10,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,11,true,Cloud credentials,GCP API Key (Concatenated - Undetected by Regex)
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,13,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,14,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/api_clients.js,17,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,4,true,Authentification,Private Key Header
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,11,true,Authentification,JSON Web Token (JWT)
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,13,true,Generic,Generic Password Assignment
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,15,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,18,false,,
+benchmark-repo,34d29e5afaf9e82a4d1b1a709fb253b9a92441cc,src/auth_module.py,20,false,,

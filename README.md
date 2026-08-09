@@ -96,7 +96,9 @@ La réponse contient :
 }
 ```
 
-Un finding inclut `category`, `name`, `file_path`, `line`, `value`, `severity`, `confidence`, `context`, `description` et `review_required`.
+Un finding inclut `category`, `name`, `file_path`, `line`, `value`, `severity`, `confidence`,`entropy`, `context`, `description` et `review_required`.
+
+`entropy` est l’entropie de Shannon de la valeur détectée ; elle est fournie comme indicateur complémentaire et ne modifie pas la gravité du finding.
 
 Le champ `pipeline_message` est `BLOCKED` s'il existe au moins un finding `Critique`, `WARNING` en présence d'un finding `Moyen`, et `INFO` sinon. Le champ `status` reste actuellement toujours `success` lorsqu'aucune erreur ne survient.
 
@@ -136,7 +138,6 @@ pytest tests/test_regex_engine.py
 - Les archives sont parcourues sans limite de taille, de nombre de fichiers ou de profondeur ; n'analysez pas d'archives non fiables en production sans protections supplémentaires.
 - Le téléchargement GitHub n'utilise ni timeout ni token d'accès et ne prend pas en charge les dépôts privés.
 - Le scan direct d'un dossier local n'est pas implémenté.
-- Le champ `review_required` contient une faute de comparaison dans l'implémentation actuelle et ne signale donc pas correctement les cas ambigus.
 
 ## Dépendances principales
 
