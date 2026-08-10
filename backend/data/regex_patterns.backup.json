@@ -107,7 +107,7 @@
   },
   {
     "name": "Database Connection String",
-    "category": "Generique",
+    "category": "Generic",
     "regex": "\\b(mongodb(?:\\+srv)?|postgresql|postgres|mysql|redis|sqlite)://[A-Za-z0-9-_]+:[^@\\s]+@[A-Za-z0-9.-]+(?::\\d+)?/?[a-zA-Z0-9-_]*\\b",
     "flags": "IGNORECASE",
     "severity": "Critical",
@@ -116,7 +116,7 @@
   },
   {
     "name": "Generic Password Assignment",
-    "category": "Générique",
+    "category": "Generic",
     "regex": "\\b(?:pwd|password|passwd|pass|secret|client_secret|db_password|db_pass)\\s*[:=]\\s*['\"]([^'\"\\s]{5,})['\"]",
     "flags": "IGNORECASE",
     "severity": "Ambiguous",

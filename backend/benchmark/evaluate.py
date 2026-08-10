@@ -51,7 +51,7 @@ def evaluate():
     for index,finding in enumerate(detected_findings):
         if index in used_findings:
             continue
-        category = finding.get("category","Générique")
+        category = finding.get("category","Generic")
         if category not in stats:
            category = "Generic"
         

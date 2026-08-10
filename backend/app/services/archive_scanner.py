@@ -1,6 +1,6 @@
 import zipfile
 import tarfile
-from app.services.regex_engine import scan_content
+from app.services.regex_engine import scan_content, is_path_allowlisted
 
 def scan_zip(zip_path_or_bytes):
     findings = []
@@ -9,6 +9,9 @@ def scan_zip(zip_path_or_bytes):
         for file_info in archive.infolist():
             # Ignorer les dossiers
             if file_info.is_dir():
+                continue
+            
+            if is_path_allowlisted(file_info.filename):
                 continue
             
             try:
@@ -38,7 +41,10 @@ def scan_tar(tar_path):
         for member in archive.getmembers():
             if not member.isfile():
                 continue
-                
+            
+            if is_path_allowlisted(member.name):
+                continue
+            
             try:
                 f = archive.extractfile(member)
                 if f is not None:

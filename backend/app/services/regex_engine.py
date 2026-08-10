@@ -2,7 +2,11 @@ import json
 import math
 import re
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+CONTEXT_LINES_BEFORE = 2
+CONTEXT_LINES_AFTER = 2
 
 def calculate_entropy(text:str) -> float:
     """Calculate l'entropie de Shannon d'une chaîne."""
@@ -18,6 +22,7 @@ def calculate_entropy(text:str) -> float:
 
 ACTIVE_PATTERNS_PATH = BASE_DIR/"data"/"regex_patterns.json"
 BACKUP_PATTERNS_PATH = BASE_DIR/"data"/"regex_patterns.backup.json"
+ALLOWLIST_PATH = BASE_DIR/"data"/"allowlist.json"
 
 def load_patterns(path:Path) -> list[dict]:
     with open(path, "r", encoding="utf-8") as f:
@@ -47,9 +52,53 @@ def get_patterns()->list[dict]:
     if ACTIVE_PATTERNS_PATH.exists():
         return load_patterns(ACTIVE_PATTERNS_PATH)
     return load_patterns(BACKUP_PATTERNS_PATH)
+
+def load_allowlist(path: Path)-> dict:
+    """Charge l'allowlist (valeurs + paths) au format GitLeaks-like en JSON"""
+    if not path.exists():
+        return{"regexes":[],"paths":[]}
+    with open(path,"r",encoding="utf-8") as f:
+        raw = json.load(f)
+    
+    return{
+        "regexes":[re.compile(p) for p in raw.get("regexes",[])],
+        "paths":[re.compile(p) for p in raw.get("paths",[])],
+    }
     
 PATTERNS = get_patterns()
+ALLOWLIST = load_allowlist(ALLOWLIST_PATH)
 
+def is_path_allowlisted(file_path:str)->bool:
+    """True si le chemin du fichier doit être ignoré (ex: node_modules, min.js)."""
+    if not file_path:
+        return False
+    return any(rx.search(file_path) for rx in ALLOWLIST["paths"])
+
+def is_value_allowlisted(value:str)->bool:
+    """True si la variable détectée correspond à un faux positif connu (placeholder, variable de template, etc...)."""
+    if not value:
+        return False
+    
+    return any(rx.fullmatch(value) or rx.search(value) for rx in ALLOWLIST["regexes"])
+
+def build_context(
+    lines: list[str],
+    line_idx: int,
+    before: int = CONTEXT_LINES_BEFORE,
+    after: int = CONTEXT_LINES_AFTER,
+)->str:
+    """Construit un contexte multi-lignes autour de la ligne détectée (1-indexed),
+    pour donner plus de matière au futur layer LLM qu'une seule ligne isolée.
+    La ligne détectée est marquée par '>>' pour rester repérable dans le bloc."""
+    start = max(0, line_idx - 1 - before)
+    end = min(len(lines), line_idx + after)
+    
+    context_rows = []
+    for i in range(start,end):
+        marker = ">>" if (i+1) == line_idx else " "
+        context_rows.append(f"{marker}{i+1}:{lines[i].strip()}")
+    
+    return "\n".join(context_rows)
 
 def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
     """
@@ -59,7 +108,11 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
     findings = []
     if not content:
         return findings
-
+    
+    # Fichier entier ignoré (ex: node_modules, package-lock.json, binaires ... )
+    if is_path_allowlisted(file_path):
+        return findings
+    
     # Liste de placeholders communs à exclure pour éviter les faux positifs génériques
     dummy_values = {
         "password", "passwd", "pwd", "secret", "null", "undefined", "true", "false",
@@ -80,7 +133,9 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
                     # Ignore les valeurs factices d'exemples/placeholders
                     if detected_value.lower() in dummy_values:
                         continue
-                    
+                if is_value_allowlisted(detected_value):
+                    continue
+                
                 entropy = calculate_entropy(detected_value)
                 
                 findings.append({
@@ -92,7 +147,7 @@ def scan_content(content: str, file_path: str = "direct_input") -> list[dict]:
                     "severity": pattern.get("severity","Medium"),
                     "confidence": pattern.get("confidence",0.5),
                     "entropy":round(entropy, 3),
-                    "context": line.strip(),
+                    "context": build_context(lines,line_idx),
                     "description": pattern.get("description",""),
                     "review_required": str(pattern.get("severity","Medium")).lower() == "ambiguous"
                 })
