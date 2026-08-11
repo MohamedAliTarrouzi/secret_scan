@@ -8,10 +8,10 @@
 
 ## 2. Baseline Metrics
 
-| Catégories | TP | FP | FN | Précision | Rappel | Observations |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Catégories | TP | FP | FN | Précision | Rappel | Observations |                      
+| :--- | :--- | :--- | :--- | :--- | :--- | :---                                                                         
 | Cloud credentials | 2 | 2 | 2 | 50.00% | 50.00% |  |
-| API tokens | 2 | 2 | 1 | 50.00% | 66.67% |  |
+| API tokens | 3 | 2 | 0 | 60.00% | 100.00% |  |
 | Authentification | 2 | 0 | 0 | 100.00% | 100.00% |  |
-| Generic | 1 | 0 | 1 | 100.00% | 50.00% |  |
-| Total | 7 | 4 | 4 | 63.64% | 63.64% |  |
+| Generic | 2 | 0 | 0 | 100.00% | 100.00% |  |
+| Total | 9 | 4 | 2 | 69.23% | 81.82% |  |

@@ -2,14 +2,15 @@ import json
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
+from sqlalchemy.orm import Session  
 
+from app.core.database import get_db
+from app.models.audit import ScanReport, Finding
 from app.services.scan_orchestrator import orchestrate_scan
 
 router = APIRouter()
-
-history_store = []
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ACTIVE_PATTERNS_PATH = BASE_DIR / "data" / "regex_patterns.json"
@@ -22,12 +23,11 @@ class ScanRequest(BaseModel):
 class RegexPatternsPayload(BaseModel):
     patterns: list[dict]
 
-def _build_scan_response(target_name: str, findings:list[dict])->dict:
+def _severity_counts(findings: list[dict]) -> dict:
     critical = sum(
         1 for item in findings 
         if str(item.get("severity", "")).lower() in ("critique", "critical")
     )
-    
     medium = sum(
         1 for item in findings 
         if str(item.get("severity", "")).lower() in ("moyen", "medium")
@@ -42,32 +42,86 @@ def _build_scan_response(target_name: str, findings:list[dict])->dict:
         if str(item.get("severity", "")).lower() in ("ambiguous", "ambigu", "ambiguë")
     )
     
-    if critical > 0:
+    return {"critical": critical, "medium": medium, "low": low, "ambiguous": ambiguous}
+
+def _scan_report_to_dict(report: ScanReport)->dict:
+    return{
+        "status": report.status,
+        "target": report.target,
+        "findings":[
+            {
+                "category": f.category,
+                "name": f.name,
+                "file_path": f.file_path,
+                "line": f.line,
+                "value": f.value,
+                "severity": f.severity,
+                "confidence": f.confidence,
+                "entropy": f.entropy,
+                "context": f.context,
+                "description": f.description,
+                "review_required": f.review_required,
+            }
+            for f in report.findings
+        ],
+        "summary":{
+            "total": report.total,
+            "critical": report.critical,
+            "medium": report.medium,
+            "low": report.low,
+            "ambiguous": report.ambiguous  
+        },
+        "pipeline_message": report.pipeline_message,
+    }
+    
+    
+    
+def _build_scan_response(db: Session,target_name: str, findings:list[dict]) -> dict:    
+    counts = _severity_counts(findings)
+    
+    if counts["critical"] > 0:
         pipeline_message = "BLOCKED: critical findings detected"
-    elif medium > 0:
+    elif counts["medium"] > 0:
         pipeline_message = "WARNING: medium findings detected"
     else:
         pipeline_message = "INFO: no blocking issue detected"
     
-    result = {
-        "status": "success",
-        "target": target_name,
-        "findings": findings,
-        "summary": {
-            "total": len(findings),
-            "critical": critical,
-            "medium": medium,
-            "low": low,
-            "ambiguous": ambiguous,
-        },
-        "pipeline_message": pipeline_message,
-    }
+    report = ScanReport(
+        target=target_name,
+        status="success",
+        pipeline_message=pipeline_message,
+        total=len(findings),
+        critical=counts["critical"],
+        medium=counts["medium"],
+        low=counts["low"],
+        ambiguous=counts["ambiguous"],
+    )
+    report.findings = [
+        Finding(
+            category=item.get("category"),
+            name=item.get("name"),
+            file_path=item.get("file_path"),
+            line=item.get("line"),
+            value=item.get("value"),
+            severity=item.get("severity"),
+            confidence=item.get("confidence"),
+            entropy=item.get("entropy"),
+            context=item.get("context"),
+            description=item.get("description"),
+            review_required=item.get("review_required",False),
+        )
+        for item in findings
+    ]
     
-    history_store.append(result)
-    return result
-
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    
+    return _scan_report_to_dict(report)
+    
+    
 @router.post("/scan")
-async def run_scan(payload: ScanRequest):
+async def run_scan(payload: ScanRequest, db: Session = Depends(get_db)):
     try:
         if payload.target == "inline":
             if not payload.content:
@@ -76,12 +130,12 @@ async def run_scan(payload: ScanRequest):
         else:
             findings = orchestrate_scan(payload.target)
             
-        return _build_scan_response(payload.target, findings)
+        return _build_scan_response(db, payload.target, findings)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc    
 
 @router.post("/scan/upload")
-async def run_scan_upload(file: UploadFile =  File(...)):
+async def run_scan_upload(file: UploadFile =  File(...),db: Session = Depends(get_db)):
     try:
         contents = await file.read()
         target_name = file.filename
@@ -98,14 +152,15 @@ async def run_scan_upload(file: UploadFile =  File(...)):
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
-        return _build_scan_response(target_name, findings)
+        return _build_scan_response(db, target_name, findings)
         
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     
 @router.get("/history")
-def get_history():
-    return history_store
+def get_history(db: Session = Depends(get_db)):
+    reports = db.query(ScanReport).order_by(ScanReport.created_at.desc()).all()
+    return [_scan_report_to_dict(r) for r in reports]
 
 @router.get("/regex-patterns")
 def get_regex_patterns():
