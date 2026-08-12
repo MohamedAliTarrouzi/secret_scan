@@ -47,6 +47,13 @@ class Finding(Base):
         context = Column(Text,nullable=True)
         description = Column(Text, nullable=True)
         review_required = Column(Boolean, default = False)
+        llm_verdict = Column(String, nullable=True)
+        llm_confidence = Column(Float,nullable=True)
+        llm_reason = Column(Text,nullable=True)
+        llm_model = Column(String,nullable=True)
+        llm_provider = Column(String,nullable=True)
+        llm_error = Column(String,nullable=True)
+        llm_reviewed_at = Column(DateTime,nullable=True)
             
         scan_report = relationship("ScanReport",back_populates="findings")
         

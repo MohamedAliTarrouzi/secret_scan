@@ -16,6 +16,13 @@ class FindingRead(BaseModel):
     context: str | None = None
     description: str | None = None
     review_required: bool = False
+    llm_verdict: str | None = None
+    llm_confidence: float | None = None 
+    llm_reason: str | None = None
+    llm_model: str | None = None
+    llm_provider: str | None = None
+    llm_error: str | None = None
+    llm_reviewed_at: datetime | None = None 
     
 class ScanSummary(BaseModel):
     total: int
