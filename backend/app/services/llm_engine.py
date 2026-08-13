@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime,timezone
 
 import litellm
@@ -74,7 +75,9 @@ def review_finding(finding: dict)-> dict:
             ]
         )
         content = response.choices[0].message.content
-        result = json.loads(content)
+        #Nettoie les balises Markdown ```json ... ``` renvoyées par le LLM
+        cleaned_content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip(), flags=re.MULTILINE)
+        result = json.loads(cleaned_content)
         
         verdict = result.get("verdict","uncertain")
         if verdict not in VALID_VERDICTS:
