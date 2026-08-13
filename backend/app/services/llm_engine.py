@@ -38,7 +38,7 @@ def _empty_llm_result(model: str, error: str | None = None)->dict:
         "llm_confidence":None,
         "llm_reason":None,
         "llm_model":model,
-        "llm_providor":"litellm-gateway",
+        "llm_provider":"litellm-gateway",
         "llm_error":error,
         "llm_reviewed_at": None,
     }
@@ -73,11 +73,15 @@ def review_finding(finding: dict)-> dict:
                 {"role":"user","content":json.dumps(prompt_data,ensure_ascii=False)},
             ]
         )
-        content = response.choices[0].messages.content
+        content = response.choices[0].message.content
         result = json.loads(content)
         
         verdict = result.get("verdict","uncertain")
         if verdict not in VALID_VERDICTS:
+            verdict = "uncertain"
+            
+        severity = result.get("severity")
+        if severity not in VALID_SEVERITIES:
             severity = None
         
         confidence = max(0.0,min(1.0, float(result.get("confidence",0))))
@@ -116,12 +120,12 @@ def _apply_verdict(finding:dict, llm_result: dict) -> None:
         finding["review_required"] = True
     
     
-def review_ambigious_findings(findings: list[dict]) -> list[dict]:
+def review_ambiguous_findings(findings: list[dict]) -> list[dict]:
     """Point d'entrée : ne traite que les findings Ambiguous/review_required."""
     for finding in findings:
         is_ambiguous = (
             finding.get("review_required") is True
-            or str(finding.get("severity","")).lower() in {"ambigous","ambigu","ambiguë"}
+            or str(finding.get("severity","")).lower() in {"ambiguous","ambigu","ambiguë"}
         )
         if not is_ambiguous:
             continue
