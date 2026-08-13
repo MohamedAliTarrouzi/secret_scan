@@ -1,8 +1,8 @@
 model_list:
-  - model_name: grok-secretscan
+  - model_name: llm-secretscan
     litellm_params: 
-      model: xai/grok-3-mini
-      api_key: os.environ/XAI_API_KEY
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
 
 general_settings: 
   master_key: os.environ/LITELLM_MASTER_KEY

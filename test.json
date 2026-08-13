@@ -1,0 +1,9 @@
+{
+  "model": "llm-secretscan",
+  "messages": [
+    {
+      "role": "user",
+      "content": "ping"
+    }
+  ]
+}
