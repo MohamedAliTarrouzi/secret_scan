@@ -2,8 +2,13 @@ import os
 from app.services.regex_engine import scan_content
 from app.services.archive_scanner import scan_zip, scan_tar
 from app.services.github_scanner import download_and_scan_github
+from app.services.llm_engine import review_ambigious_findings
 
-def orchestrate_scan(target: str, content: str | None = None):
+def orchestrate_scan(target:str, content: str | None = None):
+    findings = _run_regex_scan(target,content)
+    return review_ambigious_findings(findings)
+
+def _run_regex_scan(target: str, content: str | None = None):
     # Cas 1: Inline (Code)
     if target == "inline":
         if not content:

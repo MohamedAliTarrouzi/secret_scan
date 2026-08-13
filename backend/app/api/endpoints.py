@@ -61,6 +61,13 @@ def _scan_report_to_dict(report: ScanReport)->dict:
                 "context": f.context,
                 "description": f.description,
                 "review_required": f.review_required,
+                "llm_verdict": f.llm_verdict,
+                "llm_confidence": f.llm_confidence,
+                "llm_reason": f.llm_reason,
+                "llm_model": f.llm_model,
+                "llm_provider": f.llm_provider,
+                "llm_error": f.llm_error,
+                "llm_reviewed_at": f.llm_reviewed_at.isoformat() if f.llm_reviewed_at else None,
             }
             for f in report.findings
         ],
@@ -109,6 +116,13 @@ def _build_scan_response(db: Session,target_name: str, findings:list[dict]) -> d
             context=item.get("context"),
             description=item.get("description"),
             review_required=item.get("review_required",False),
+            llm_verdict=item.get("llm_verdict"),
+            llm_confidence=item.get("llm_confidence"),
+            llm_reason=item.get("llm_reason"),
+            llm_model=item.get("llm_model"),
+            llm_provider=item.get("llm_provider"),
+            llm_error=item.get("llm_error"),
+            llm_reviewed_at=item.get("llm_reviewed_at"),
         )
         for item in findings
     ]
