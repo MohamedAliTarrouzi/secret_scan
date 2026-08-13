@@ -6,7 +6,7 @@ from app.services.llm_engine import review_ambiguous_findings
 
 def orchestrate_scan(target:str, content: str | None = None):
     findings = _run_regex_scan(target,content)
-    return review_ambigious_findings(findings)
+    return review_ambiguous_findings(findings)
 
 def _run_regex_scan(target: str, content: str | None = None):
     # Cas 1: Inline (Code)
