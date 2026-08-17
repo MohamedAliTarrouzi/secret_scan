@@ -1,8 +1,12 @@
 model_list:
-  - model_name: llm-secretscan
+  - model_name: llm-secretscan-groq
     litellm_params: 
       model: groq/llama-3.3-70b-versatile
       api_key: os.environ/GROQ_API_KEY
+  - model_name: llm-secretscan-claude
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/CLAUDE_API_KEY
 
 general_settings: 
   master_key: os.environ/LITELLM_MASTER_KEY

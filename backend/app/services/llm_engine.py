@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_GATEWAY_URL = "http://localhost:4000"
-DEFAULT_MODEL = "llm-secretscan"
+DEFAULT_MODEL = "llm-secretscan-groq"
 DEFAULT_TIMEOUT = 30
 
 VALID_VERDICTS = {"secret","false_positive","uncertain"}
