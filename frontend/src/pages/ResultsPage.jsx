@@ -1,6 +1,34 @@
-import { AlertTriangle, ShieldCheck } from "lucide-react"
+import { useMemo, useState } from "react"
+import { ShieldCheck } from "lucide-react"
+import FindingItem from "../components/FindingItem"
+import FindingsFilterBar from "../components/FindingsFilterBar"
+import { extractCategories, filterFindings } from "../utils/findingsFilter"
 
 export default function ResultsPage({ result }) {
+  const [search, setSearch] = useState("")
+  const [activeSeverities, setActiveSeverities] = useState([])
+  const [activeCategory, setActiveCategory] = useState("all")
+
+  const findings = result?.findings || []
+
+  const categories = useMemo(() => extractCategories(findings), [findings])
+
+  const filtered = useMemo(
+    () =>
+      filterFindings(findings, {
+        search,
+        severities: activeSeverities,
+        category: activeCategory,
+      }),
+    [findings, search, activeSeverities, activeCategory],
+  )
+
+  const toggleSeverity = (sev) => {
+    setActiveSeverities((prev) =>
+      prev.includes(sev) ? prev.filter((s) => s !== sev) : [...prev, sev],
+    )
+  }
+
   if (!result) {
     return (
       <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-slate-300">
@@ -25,19 +53,17 @@ export default function ResultsPage({ result }) {
         </div>
 
         <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-         <p className="font-semibold text-white">
-          {result.pipeline_message || "No message"}
-         </p>
+          <p className="font-semibold text-white">{result.pipeline_message || "No message"}</p>
         </div>
 
         <div className="mb-6 grid gap-3 md:grid-cols-5">
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-           <p className="text-sm text-slate-400">Total</p>
-           <p className="text-2xl font-semibold text-white">{summary.total || 0}</p>
+            <p className="text-sm text-slate-400">Total</p>
+            <p className="text-2xl font-semibold text-white">{summary.total || 0}</p>
           </div>
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-           <p className="text-sm text-slate-400">Critical</p>
-           <p className="text-2xl font-semibold text-red-400">{summary.critical || 0}</p>
+            <p className="text-sm text-slate-400">Critical</p>
+            <p className="text-2xl font-semibold text-red-400">{summary.critical || 0}</p>
           </div>
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
             <p className="text-sm text-slate-400">Medium</p>
@@ -53,42 +79,36 @@ export default function ResultsPage({ result }) {
           </div>
         </div>
 
-        {result.findings?.length === 0 ? (
+        {findings.length === 0 ? (
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-slate-300">
             No secrets detected.
           </div>
         ) : (
-          <div className="space-y-3">
-            {result.findings.map((item, index) => (
-              <div
-                key={`${item.file_path}-${item.line}-${index}`}
-                className="rounded-xl border border-slate-700 bg-slate-900/70 p-4"
-              >
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-sm text-red-300">
-                    {item.severity}
-                  </span>
-                  {item.review_required && (
-                    <span className="rounded-full bg-purple-500/10 px-2.5 py-1 text-sm text-purple-300">
-                      LLM review
-                    </span>
-                  )}
-                  <span className="text-sm text-slate-400">{item.category}</span>
-                  <span className="font-mono text-sm text-slate-400">
-                    {item.file_path}:{item.line}
-                  </span>
-                </div>
+          <>
+            <FindingsFilterBar
+              search={search}
+              onSearchChange={setSearch}
+              activeSeverities={activeSeverities}
+              onToggleSeverity={toggleSeverity}
+              categories={categories}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              resultCount={filtered.length}
+              totalCount={findings.length}
+            />
 
-                <p className="font-medium text-white">{item.name}</p>
-                <p className="mt-1 font-mono text-sm text-slate-300">{item.context}</p>
-                <p className="mt-1 text-sm text-slate-400">Entropy: {item.entropy}</p>
-                <div className="mt-3 flex items-center gap-2 text-sm text-amber-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>{item.description}</span>
-                </div>
+            {filtered.length === 0 ? (
+              <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-slate-300">
+                No findings match your filters.
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map((item, index) => (
+                  <FindingItem key={`${item.file_path}-${item.line}-${index}`} item={item} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
