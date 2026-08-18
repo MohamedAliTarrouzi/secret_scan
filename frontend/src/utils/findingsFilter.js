@@ -35,5 +35,5 @@ export function filterFindings(findings,{ search = "", severities = [], categori
 /** Unique, sorted list of categories present in a set of findings. */
 export function extractCategories(findings){
     const set = new Set((findings || []).map((f)=>f.category).filter(Boolean))
-    return Array.form(set).sort()
+    return Array.from(set).sort()
 }
