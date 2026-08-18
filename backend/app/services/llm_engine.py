@@ -31,6 +31,28 @@ Return ONLY valid JSON with exactly these fields:
 leak would be if real (Critical = production credential/high-privilege key,
 Medium = limited-scope or internal token, Low = low-risk/dev-only).
 Never repeat or reveal the detected value itself in "reason".
+
+GUIDANCE:
+- "entropy" is a weak supplementary signal, not a verdict on its own. A
+  low-entropy hex/hash-like string is NOT automatically a false positive —
+  check whether the variable name or surrounding code explicitly indicates a
+  credential (e.g. *_secret, *_key, password=, token=).
+- The repository or file name containing words like "test", "demo", "example",
+  or "benchmark" is NOT sufficient evidence of a false positive. Test/benchmark
+  repositories are frequently built specifically to contain realistic-looking
+  credentials in order to test scanners like this one. Judge the value and its
+  immediate code context, not the repo name.
+
+EXAMPLES:
+
+Finding: {"name": "Generic Password Assignment", "value": "changeme123", "context": "STAGING_PASSWORD = 'changeme123'"}
+-> {"verdict": "secret", "severity": "Low", "confidence": 0.7, "reason": "Even conventional-looking placeholder-style passwords should be flagged for rotation if committed to a real config file; don't assume a 'placeholder-sounding' value is automatically safe to ignore."}
+
+Finding: {"name": "AWS Secret Access Key", "value": "74e7e1837a98c7e0e4cd7fcf8b955894465964ec", "context": "GITHUB_OAUTH_SECRET = '74e7e1837a98c7e0e4cd7fcf8b955894465964ec'", "entropy": 3.632}
+-> {"verdict": "secret", "severity": "Critical", "confidence": 0.85, "reason": "Variable name explicitly identifies this as an OAuth secret paired with a client ID. Low entropy alone does not rule out a real hex-encoded credential."}
+
+Finding: {"name": "Generic Password Assignment", "value": "Tr0ub4dor&3_prod_2026", "file_path": "SecretsTest-main/config.py", "context": "PROD_DB_PASSWORD = 'Tr0ub4dor&3_prod_2026'"}
+-> {"verdict": "secret", "severity": "Critical", "confidence": 0.8, "reason": "High-entropy value in a variable explicitly named for a production database password. The repository name alone does not confirm this is fake data."}
 """
 
 def _empty_llm_result(model: str, error: str | None = None)->dict:
