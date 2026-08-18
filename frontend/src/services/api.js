@@ -1,10 +1,10 @@
 import axios from "axios"
 
 const api = axios.create({
-    baseURL: "http://localhost:8000/api",
+    baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "http://localhost:8000/api",
 })
 
-export const runScan = (target) => api.post("/scan",{target})
+export const runScan = (target, extra = {} ) => api.post("/scan",{target, ...extra})
 export const getHistory = () => api.get("/history")
 
 export default api
