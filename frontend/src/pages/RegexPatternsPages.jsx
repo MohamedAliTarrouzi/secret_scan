@@ -83,7 +83,7 @@ export default function RegexPatternsPage() {
           onClick={restoreBackup}
           className="rounded-x1 bg-slate-700 px-4 py-2 text-white"
         >
-          Restaurer le backup
+          Resinitialize
         </button>
       </div>
       {message && <p className="mt-2 text-sm text-slate-300">{message}</p>}
