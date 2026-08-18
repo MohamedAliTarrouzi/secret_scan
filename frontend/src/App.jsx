@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react"
-import { Shield, CheckCircle, Search, History as HistoryIcon } from "lucide-react"
+import { Shield, Search, History as HistoryIcon, Braces } from "lucide-react"
 
 import SubmissionPage from "./pages/SubmissionPage"
 import ResultsPage from "./pages/ResultsPage"
 import HistoryPage from "./pages/HistoryPage"
 import RegexPatternsPage from "./pages/RegexPatternsPages"
 import { getHistory } from "./services/api"
+
+const NAV_ITEMS = [
+  { id: "submission", label: "Scan", icon: Search },
+  { id: "results", label: "Results", icon: Shield, requiresResult: true },
+  { id: "regex", label: "Regex Patterns", icon: Braces },
+  { id: "history", label: "History", icon: HistoryIcon },
+]
 
 export default function App() {
   const [view, setView] = useState("submission")
@@ -17,7 +24,7 @@ export default function App() {
       const response = await getHistory()
       setHistory(response.data || [])
     } catch (err) {
-      console.error("Erreur chargement historique:", err)
+      console.error("Failed to load history:", err)
     }
   }
 
@@ -25,86 +32,80 @@ export default function App() {
     refreshHistory()
   }, [])
 
-  return (
-    <div className="min-h-screen flex flex-col text-slate-100">
-      <header className="border-b border-slate-800 px-8 py-4 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-emerald-400" />
-            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
-              SecretScan
-            </h1>
-          </div>
+  const goTo = (id) => {
+    if (id === "history") refreshHistory()
+    setView(id)
+  }
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setView("submission")}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
-            >
-              <Search className="h-4 w-4" />
-              Soumission
-            </button>
-            <button
-             onClick={() => setView("regex")}
-             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
-            >
-              Regex
-            </button>
-            <button
-              onClick={() => {
-                setView("history")
+  return (
+    <div className="min-h-screen flex bg-bg-primary text-slate-100">
+      <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-950/60 flex flex-col">
+        <div className="px-6 py-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <Shield className="h-7 w-7 text-emerald-400" />
+            <span className="font-mono text-lg font-semibold tracking-wide bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+              SecretScan
+            </span>
+          </div>
+          {/* Scanning-line accent under the brand mark */}
+          <div className="mt-3 h-px w-full bg-gradient-to-r from-emerald-400/70 via-blue-500/40 to-transparent" />
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {NAV_ITEMS.map(({ id, label, icon: Icon, requiresResult }) => {
+            const disabled = requiresResult && !results
+            const active = view === id
+
+            return (
+              <button
+                key={id}
+                type="button"
+                disabled={disabled}
+                onClick={() => goTo(id)}
+                className={[
+                  "w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-slate-800 text-white border-l-2 border-emerald-400 pl-[14px]"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
+                  disabled ? "opacity-40 cursor-not-allowed hover:bg-transparent" : "",
+                ].join(" ")}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="px-4 py-4 border-t border-slate-800">
+          <div className="flex items-center gap-2 rounded-xl bg-slate-900/70 px-3 py-2 font-mono text-xs text-emerald-400">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            Connected to API
+          </div>
+        </div>
+      </aside>
+
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto">
+          {view === "submission" && (
+            <SubmissionPage
+              onScanCompleted={(data) => {
+                setResults(data)
+                setView("results")
                 refreshHistory()
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
-            >
-              <HistoryIcon className="h-4 w-4" />
-              Historique
-            </button>
-          </div>
+            />
+          )}
+
+          {view === "results" && <ResultsPage result={results} />}
+
+          {view === "history" && <HistoryPage items={history} />}
+
+          {view === "regex" && <RegexPatternsPage />}
         </div>
-      </header>
-
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
-        <div className="mb-8 rounded-2xl border border-slate-700 bg-slate-800/50 p-6">
-          <div className="flex items-center gap-2 text-emerald-400">
-            <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">Connecté à l’API FastAPI</span>
-          </div>
-        </div>
-
-        {view === "submission" && (
-          <SubmissionPage
-            onScanCompleted={(data) => {
-              setResults(data)
-              setView("results")
-              refreshHistory()
-            }}
-            onOpenHistory={() => {
-              setView("history")
-              refreshHistory()
-            }}
-          />
-        )}
-
-        {view === "results" && (
-          <ResultsPage
-            result={results}
-            onBack={() => setView("submission")}
-            onOpenHistory={() => {
-              setView("history")
-              refreshHistory()
-            }}
-          />
-        )}
-
-        {view === "history" && (
-          <HistoryPage
-            items={history}
-            onBack={() => setView("submission")}
-          />
-        )}
-
-        {view === "regex" && <RegexPatternsPage />}
       </main>
     </div>
   )
