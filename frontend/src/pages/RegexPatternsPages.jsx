@@ -24,11 +24,14 @@ export default function RegexPatternsPage() {
       });
 
       const data = await response.json();
+
       setMessage(
-        data.status === "saved" ? "Enregistré dans le fichier actif" : "Erreur",
+        data.status === "saved"
+          ? "Saved to the active file"
+          : "Error",
       );
     } catch {
-      setMessage("JSON invalide");
+      setMessage("Invalid JSON");
     }
   };
 
@@ -40,35 +43,38 @@ export default function RegexPatternsPage() {
           method: "POST",
         },
       );
+
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Impossible de restaurer le backup");
+        throw new Error(data.detail || "Unable to restore backup");
       }
 
       if (data.status === "restored") {
         setText(JSON.stringify(data.patterns, null, 2));
-        setMessage("Backup restauré dans le fichier actif.");
+        setMessage("Backup restored to the active file.");
       } else {
-        setMessage("Erreur lors de la restoration.");
+        setMessage("Error restoring backup.");
       }
     } catch (error) {
-      setMessage(error.message || "Erreur lors de la restauration. ");
+      setMessage(error.message || "Error restoring backup.");
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Gestion des regex</h2>
+    <div className="mx-auto max-w-5xl">
+      <h2 className="mb-4 text-2xl font-bold">Regex Pattern Management</h2>
+
       <p className="mb-4 text-sm text-slate-400">
-        Collez ici un JSON d'objets regex. Le fichier actif est utilisé par le
-        scanner.
+        Paste a JSON array of regex objects here. The active file is used by
+        the scanner.
       </p>
+
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={24}
-        className="l border border-slate-700 bg-slate-900 p-3 text-sm text-slate-100"
+        className="w-full border border-slate-700 bg-slate-900 p-3 text-sm text-slate-100"
       />
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -76,17 +82,22 @@ export default function RegexPatternsPage() {
           onClick={savePatterns}
           className="rounded-xl bg-emerald-600 px-4 py-2 text-white"
         >
-          Enregistrer dans le fichier actif
+          Save to active file
         </button>
 
         <button
           onClick={restoreBackup}
-          className="rounded-x1 bg-slate-700 px-4 py-2 text-white"
+          className="rounded-xl bg-slate-700 px-4 py-2 text-white"
         >
-          Resinitialize
+          Restore Backup
         </button>
       </div>
-      {message && <p className="mt-2 text-sm text-slate-300">{message}</p>}
+
+      {message && (
+        <p className="mt-2 text-sm text-slate-300">
+          {message}
+        </p>
+      )}
     </div>
   );
 }
