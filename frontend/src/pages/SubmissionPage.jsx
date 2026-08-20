@@ -3,6 +3,8 @@ import {
   Code2,
   GitBranch,
   FileArchive,
+  FolderOpen,
+  FileText,
   Play,
   Loader2,
   AlertCircle,
@@ -15,13 +17,48 @@ export default function SubmissionPage({ onScanCompleted }) {
   const [code, setCode] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [zipFile, setZipFile] = useState(null);
+  const [multiFiles, setMultiFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const modes = [
+    {
+      id: "code",
+      label: "Paste Code",
+      description: "Analyze source code directly",
+      icon: Code2,
+    },
+    {
+      id: "url",
+      label: "Repository URL",
+      description: "Scan a Git repository",
+      icon: GitBranch,
+    },
+    {
+      id: "zip",
+      label: "Upload ZIP",
+      description: "Scan a local project archive",
+      icon: FileArchive,
+    },
+    {
+      id: "folder",
+      label: "Scan Folder",
+      description: "Select an entire local folder",
+      icon: FolderOpen,
+    },
+    {
+      id: "files",
+      label: "Select Files",
+      description: "Pick specific files to scan",
+      icon: FileText,
+    },
+  ];
 
   const validate = () => {
     if (mode === "code") return code.trim().length > 0;
     if (mode === "url") return repoUrl.trim().length > 5;
     if (mode === "zip") return zipFile instanceof File;
+    if (mode === "folder" || mode === "files") return multiFiles.length > 0;
     return false;
   };
 
@@ -39,23 +76,30 @@ export default function SubmissionPage({ onScanCompleted }) {
     try {
       let json;
 
-      if (mode === "zip") {
+      if (mode === "folder" || mode === "files") {
+        const fd = new FormData();
+        multiFiles.forEach((file) => {
+          fd.append("files", file, file.webkitRelativePath || file.name);
+        });
+
+        const resp = await fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/scan/upload-multiple`,
+          { method: "POST", body: fd }
+        );
+
+        json = await resp.json();
+        if (!resp.ok) throw new Error(json.detail || JSON.stringify(json));
+      } else if (mode === "zip") {
         const fd = new FormData();
         fd.append("file", zipFile);
 
         const resp = await fetch(
           `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/scan/upload`,
-          {
-            method: "POST",
-            body: fd,
-          },
+          { method: "POST", body: fd }
         );
 
         json = await resp.json();
-
-        if (!resp.ok) {
-          throw new Error(json.detail || JSON.stringify(json));
-        }
+        if (!resp.ok) throw new Error(json.detail || JSON.stringify(json));
       } else {
         const payload =
           mode === "code"
@@ -78,27 +122,6 @@ export default function SubmissionPage({ onScanCompleted }) {
       setLoading(false);
     }
   };
-
-  const modes = [
-    {
-      id: "code",
-      label: "Paste Code",
-      description: "Analyze source code directly",
-      icon: Code2,
-    },
-    {
-      id: "url",
-      label: "Repository URL",
-      description: "Scan a Git repository",
-      icon: GitBranch,
-    },
-    {
-      id: "zip",
-      label: "Upload ZIP",
-      description: "Scan a local project archive",
-      icon: FileArchive,
-    },
-  ];
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -126,7 +149,7 @@ export default function SubmissionPage({ onScanCompleted }) {
             Choose scan source
           </p>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
             {modes.map((item) => {
               const Icon = item.icon;
               const active = mode === item.id;
@@ -261,12 +284,65 @@ const API_KEY = "your-secret-key";`}
                 <input
                   type="file"
                   accept=".zip,application/zip"
-                  onChange={(e) =>
-                    setZipFile(e.target.files?.[0] ?? null)
-                  }
+                  onChange={(e) => setZipFile(e.target.files?.[0] ?? null)}
                   className="hidden"
                 />
               </label>
+            </div>
+          )}
+
+          {/* Folder */}
+          {mode === "folder" && (
+            <div>
+              <label className="text-sm font-medium text-slate-200">
+                Local folder
+              </label>
+              <p className="mt-1 mb-2 text-xs text-slate-500">
+                Select a folder — every file inside (recursively) will be
+                scanned.
+              </p>
+              <input
+                type="file"
+                webkitdirectory="true"
+                directory="true"
+                multiple
+                onChange={(e) =>
+                  setMultiFiles(Array.from(e.target.files || []))
+                }
+                className="text-sm text-slate-300"
+              />
+              {multiFiles.length > 0 && (
+                <p className="mt-2 text-xs text-slate-500">
+                  {multiFiles.length} file(s) selected
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Files */}
+          {mode === "files" && (
+            <div>
+              <label className="text-sm font-medium text-slate-200">
+                Individual files
+              </label>
+              <p className="mt-1 mb-2 text-xs text-slate-500">
+                Hold Ctrl/Cmd to select multiple files.
+              </p>
+              <input
+                type="file"
+                multiple
+                onChange={(e) =>
+                  setMultiFiles(Array.from(e.target.files || []))
+                }
+                className="text-sm text-slate-300"
+              />
+              {multiFiles.length > 0 && (
+                <ul className="mt-2 max-h-32 overflow-y-auto text-xs text-slate-500">
+                  {multiFiles.map((f, i) => (
+                    <li key={i}>{f.webkitRelativePath || f.name}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
@@ -276,9 +352,7 @@ const API_KEY = "your-secret-key";`}
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
 
               <div>
-                <p className="text-sm font-medium text-red-300">
-                  Scan failed
-                </p>
+                <p className="text-sm font-medium text-red-300">Scan failed</p>
                 <p className="mt-1 text-sm text-red-400/80">{error}</p>
               </div>
             </div>

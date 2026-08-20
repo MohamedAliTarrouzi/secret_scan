@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.audit import ScanReport, Finding
 from app.services.scan_orchestrator import orchestrate_scan
+from typing import List
+from app.services.archive_scanner import scan_files
+from app.services.llm_engine import review_ambiguous_findings
 
 router = APIRouter()
 
@@ -170,7 +173,28 @@ async def run_scan_upload(file: UploadFile =  File(...),db: Session = Depends(ge
         
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    
+
+@router.post("/scan/upload-multiple")
+async def run_scan_upload_multiple(
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        entries = []
+        for f in files:
+            content = await f.read()
+            #Le frontend envoie webkitRelativePath comme nom de fichier pour
+            #un dossier, ce qui prèserve l'arborescence pour l'allowlist du paths.
+            entries.append((f.filename,content))
+            
+        findings = scan_files(entries)
+        findings = review_ambiguous_findings(findings)
+        
+        target_name = files[0].filename if len(files) == 1 else f"{len(files)} file(s)"
+        return _build_scan_response(db,target_name, findings)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
 @router.get("/history")
 def get_history(db: Session = Depends(get_db)):
     reports = db.query(ScanReport).order_by(ScanReport.created_at.desc()).all()

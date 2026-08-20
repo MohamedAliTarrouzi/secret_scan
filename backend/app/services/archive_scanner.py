@@ -60,3 +60,18 @@ def scan_tar(tar_path):
                 print(f"Erreur lors de la lecture de {member.name}: {e}")
                 
     return findings
+def scan_files(file_entries):
+    """file_entries: itérable de (relative_path: str, raw_content: bytes).
+    Utilisé pour le scan de dossiers ou de fichiers multiples uploadés."""
+    findings = []
+    for relative_path, raw_content in file_entries:
+        if is_path_allowlisted(relative_path):
+            continue
+        try:
+            content = raw_content.decode('utf-8',errors='ignore')
+            if '\x00' in content[:1024]:
+                continue
+            findings.extend(scan_content(content,file_path=relative_path))
+        except Exception as e:
+            print(f"Erreur lors de la lecture de {relative_path}: {e}")
+    return findings
