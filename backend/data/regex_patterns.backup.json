@@ -5,7 +5,7 @@
     "regex": "\\b(AKIA|ASCA|AGPA|AIDA)[0-9A-Z]{16}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Clé d'accès AWS (Access Key ID) permettant d'authentifier les requêtes API."
+    "description": "AWS Access Key ID used to authenticate API requests."
   },
   {
     "name": "AWS Secret Access Key",
@@ -13,7 +13,7 @@
     "regex": "\\b[A-Za-z0-9/+=]{40}\\b",
     "severity": "Ambiguous",
     "confidence": 0.5,
-    "description": "Clé d'accès secrète AWS (Secret Access Key) potentielle nécessitant une révision manuelle."
+    "description": "Potential AWS Secret Access Key requiring manual review."
   },
   {
     "name": "Azure SAS Token",
@@ -22,7 +22,7 @@
     "flags": "IGNORECASE",
     "severity": "Critical",
     "confidence": 0.9,
-    "description": "Shared Access Signature (SAS) Token Azure pour l'accès au stockage."
+    "description": "Azure Shared Access Signature (SAS) token for storage access."
   },
   {
     "name": "GCP API Key",
@@ -30,7 +30,7 @@
     "regex": "\\bAIza[0-9A-Za-z-_]{35}\\b",
     "severity": "Critical",
     "confidence": 0.95,
-    "description": "Clé d'API Google Cloud Platform (GCP)."
+    "description": "Google Cloud Platform (GCP) API key."
   },
   {
     "name": "GitHub Personal Access Token (Classic)",
@@ -38,7 +38,7 @@
     "regex": "\\bghp_[a-zA-Z0-9]{36}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Token d'accès personnel GitHub (Classique)."
+    "description": "GitHub Personal Access Token (Classic)."
   },
   {
     "name": "GitHub Personal Access Token (Fine-grained)",
@@ -46,7 +46,7 @@
     "regex": "\\bgithub_pat_[a-zA-Z0-9]{82}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Token d'accès personnel GitHub à granularité fine."
+    "description": "GitHub Fine-grained Personal Access Token."
   },
   {
     "name": "GitLab Personal Access Token",
@@ -54,7 +54,31 @@
     "regex": "\\bglpat-[a-zA-Z0-9\\-]{20}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Token d'accès personnel GitLab."
+    "description": "GitLab Personal Access Token."
+  },
+  {
+    "name": "OpenAI API Key",
+    "category": "API tokens",
+    "regex": "\\bsk-(proj-)?[a-zA-Z0-9T3BlbkFJ]{20,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "OpenAI secret API key."
+  },
+  {
+    "name": "Anthropic API Key",
+    "category": "API tokens",
+    "regex": "\\bsk-ant-api\\d{2}-[a-zA-Z0-9\\-_]{80,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "Anthropic Claude API key."
+  },
+  {
+    "name": "Hugging Face Access Token",
+    "category": "API tokens",
+    "regex": "\\bhf_[a-zA-Z0-9]{34}\\b",
+    "severity": "Critical",
+    "confidence": 1.0,
+    "description": "Hugging Face user access token."
   },
   {
     "name": "Stripe API Key",
@@ -62,7 +86,7 @@
     "regex": "\\b(sk|rk)_(test|live)_[0-9a-zA-Z]{24,}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Clé API Stripe (secrète ou restreinte)."
+    "description": "Stripe API Key (secret or restricted)."
   },
   {
     "name": "Slack Webhook URL",
@@ -71,7 +95,7 @@
     "flags": "IGNORECASE",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "URL de Webhook Slack entrante exposée."
+    "description": "Exposed Slack Incoming Webhook URL."
   },
   {
     "name": "Discord Bot Token",
@@ -79,7 +103,7 @@
     "regex": "\\b[MN][A-Za-z0-9\\-_]{23,25}\\.[A-Za-z0-9\\-_]{6}\\.[A-Za-z0-9\\-_]{27,38}\\b",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Token d'authentification de Bot Discord."
+    "description": "Discord Bot authentication token."
   },
   {
     "name": "Heroku API Key",
@@ -87,7 +111,7 @@
     "regex": "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b",
     "severity": "Ambiguous",
     "confidence": 0.6,
-    "description": "Clé d'API Heroku ou UUID générique (vérification manuelle requise)."
+    "description": "Heroku API Key or generic UUID (manual verification required)."
   },
   {
     "name": "Private Key Header",
@@ -95,15 +119,15 @@
     "regex": "-----BEGIN (?P<type>[A-Z ]+) PRIVATE KEY-----",
     "severity": "Critical",
     "confidence": 1.0,
-    "description": "Début d'un bloc de clé privée SSH, RSA, PGP ou EC."
+    "description": "Header for an SSH, RSA, PGP, or EC Private Key block."
   },
   {
     "name": "JSON Web Token (JWT)",
     "category": "Authentification",
-    "regex": "\\beyJ[A-Za-z0-9-_=]+\\.eyJ[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*\\b",
+    "regex": "\\beyJ[A-Za-z0-9-_=]+\\.eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_.+/=]*\\b",
     "severity": "Medium",
-    "confidence": 0.8,
-    "description": "Token de session JSON Web Token (JWT) complet."
+    "confidence": 0.85,
+    "description": "Complete JSON Web Token (JWT) session credential."
   },
   {
     "name": "Database Connection String",
@@ -112,7 +136,7 @@
     "flags": "IGNORECASE",
     "severity": "Critical",
     "confidence": 0.95,
-    "description": "Chaîne de connexion de base de données avec identifiants."
+    "description": "Database connection string with embedded credentials."
   },
   {
     "name": "Generic Password Assignment",
@@ -121,6 +145,6 @@
     "flags": "IGNORECASE",
     "severity": "Ambiguous",
     "confidence": 0.6,
-    "description": "Assignation de mot de passe ou clé secrète en dur (vérification requise)."
+    "description": "Hardcoded password or secret key assignment (verification required)."
   }
 ]

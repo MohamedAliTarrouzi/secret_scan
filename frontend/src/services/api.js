@@ -6,5 +6,7 @@ const api = axios.create({
 
 export const runScan = (target, extra = {} ) => api.post("/scan",{target, ...extra})
 export const getHistory = () => api.get("/history")
+export const deleteHistoryItem = (scanId) => api.delete(`/history/${scanId}`)
+export const deleteAllHistory = () => api.delete("/history")
 
 export default api

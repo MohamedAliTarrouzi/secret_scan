@@ -49,6 +49,7 @@ def _severity_counts(findings: list[dict]) -> dict:
 
 def _scan_report_to_dict(report: ScanReport)->dict:
     return{
+        "id":report.id,
         "status": report.status,
         "target": report.target,
         "findings":[
@@ -199,6 +200,37 @@ async def run_scan_upload_multiple(
 def get_history(db: Session = Depends(get_db)):
     reports = db.query(ScanReport).order_by(ScanReport.created_at.desc()).all()
     return [_scan_report_to_dict(r) for r in reports]
+
+@router.delete("/history/{scan_id}")
+def delete_history_item(scan_id: int, db:Session = Depends(get_db)):
+    report = db.query(ScanReport).filter(ScanReport.id == scan_id).first()
+    
+    if not report:
+        raise HTTPException(
+            status_code=404,
+            detail="Scan history item not found",
+        )
+    
+    db.delete(report)
+    db.commit()
+    
+    return{
+        "status":"deleted",
+        "id":scan_id,
+    }
+
+@router.delete("/history")
+def delete_all_history(db: Session = Depends(get_db)):
+    reports = db.query(ScanReport).all()
+    
+    for report in reports:
+        db.delete(report)
+       
+    db.commit()
+    return{
+        "status":"deleted",
+        "messages":"Scan history cleared",
+    }
 
 @router.get("/regex-patterns")
 def get_regex_patterns():

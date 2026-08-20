@@ -102,7 +102,7 @@ export default function App() {
 
           {view === "results" && <ResultsPage result={results} />}
 
-          {view === "history" && <HistoryPage items={history} />}
+          {view === "history" && <HistoryPage items={history} onHistoryChanged={refreshHistory}/>}
 
           {view === "regex" && <RegexPatternsPage />}
         </div>
