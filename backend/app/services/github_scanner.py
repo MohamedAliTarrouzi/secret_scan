@@ -2,30 +2,56 @@ import io
 import requests
 from app.services.archive_scanner import scan_zip
 
-def download_and_scan_github(github_url: str, branch: str = "main"):
+GITHUP_API_URL = "https://api.github.com"
+
+def download_and_scan_github(github_url: str, branch: str = "main", token: str | None = None):
+    """
+    Download a GitHub repository as a ZIP archive and scan it.
+
+    Public repository:
+        token=None
+
+    Private repository:
+        token=<GitHub installation access token>
+    """
+    
     # Exemple d'URL : https://github.com/user/project
     # Nettoyage rapide de l'URL
-    url_parts = github_url.strip("/").split("/")
-    if len(url_parts) < 5:
-        raise ValueError("URL GitHub invalide. Format attendu : https://github.com/owner/repo")
+    
+    github_url = github_url.strip().rstrip("/")
+    
+    url_parts = github_url.split("/")
+    
+    if len(url_parts) < 5 or url_parts[2] != "github.com":
+        raise ValueError("Invalid GitHub URL. Expected format: https://github.com/owner/repo")
         
     owner = url_parts[-2]
     repo = url_parts[-1]
     
-    # URL de téléchargement du ZIP par GitHub
-    zip_download_url = f"https://github.com/{owner}/{repo}/archive/refs/heads/{branch}.zip"
+    #GitHub API endpoint.
+    # This works for both public and private repositories.
+    {}
+    zip_download_url = (f"{GITHUP_API_URL}/repos/{owner}/{repo}/zipball/{branch}")
     
-    print(f"Téléchargement du dépôt {owner}/{repo} (branche: {branch})...")
-    response = requests.get(zip_download_url)
+    headers = {"Accept":"application/vnd.github+json"}
     
+    #Only add authentification for private repositories.
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        
+    print(f"Downloading repository {owner}/{repo} (branche: {branch})...")
+    response = requests.get(zip_download_url,headers=headers,timeout=60)
+    
+    #If "main" doesn't exist, try "master"
     if response.status_code == 404 and branch == "main":
-        # Essayer avec la branche historique "master" si "main" échoue (404)
+        print("'main'branch was not found. Retrying with 'master' branch... ")
         zip_download_url = f"https://github.com/{owner}/{repo}/archive/refs/heads/master.zip"
-        response = requests.get(zip_download_url)
+        response = requests.get(zip_download_url,headers=headers,timeout=60)
         
     if response.status_code != 200:
-        raise Exception(f"Impossible de télécharger le dépôt. Code HTTP : {response.status_code}")
-        
-    # Charger le contenu binaire en mémoire et le scanner directement
+        raise Exception(f"Unable to download repository. HTTP Code: {response.status_code}")
+    
+    print(f"Repository {owner}/{repo} downloaded successfully.")
+    # Load ZIP in memory and scan it.
     zip_bytes = io.BytesIO(response.content)
     return scan_zip(zip_bytes)
