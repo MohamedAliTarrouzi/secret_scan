@@ -45,7 +45,7 @@ def download_and_scan_github(github_url: str, branch: str = "main", token: str |
     #If "main" doesn't exist, try "master"
     if response.status_code == 404 and branch == "main":
         print("'main'branch was not found. Retrying with 'master' branch... ")
-        zip_download_url = f"https://github.com/{owner}/{repo}/archive/refs/heads/master.zip"
+        zip_download_url = f"{GITHUP_API_URL}/repos/{owner}/{repo}/zipball/master"
         response = requests.get(zip_download_url,headers=headers,timeout=60)
         
     if response.status_code != 200:

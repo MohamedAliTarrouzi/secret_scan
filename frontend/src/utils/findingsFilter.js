@@ -8,13 +8,13 @@ export const SEVERITIES = ["Critical","Medium","Low","Ambiguous"]
  * - category: "all" or a specific category string.
  */
 
-export function filterFindings(findings,{ search = "", severities = [], categories = "all"} = {}){
+export function filterFindings(findings,{ search = "", severities = [], category = "all"} = {}){
     const list = findings || []
     const q = search.trim().toLowerCase()
 
     return list.filter((f)=>{
         if(severities.length > 0 && !severities.includes(f.severity)) return false
-        if(categories!=="all" && f.category !==category) return false
+        if(category!=="all" && f.category !==category) return false
 
         if(!q) return true
         const haystack = [
@@ -26,7 +26,7 @@ export function filterFindings(findings,{ search = "", severities = [], categori
             f.llm_verdict,
             f.llm_reason,
         ]
-        .filter(boolean).join(" ").toLowerCase()
+        .filter(Boolean).join(" ").toLowerCase()
 
         return haystack.includes(q)
     })

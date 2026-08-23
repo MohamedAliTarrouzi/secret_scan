@@ -4,7 +4,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from sqlalchemy.orm import Session  
+from sqlalchemy.orm import Session
+import requests   
 
 from app.core.database import get_db
 from app.models.audit import ScanReport, Finding
@@ -12,6 +13,8 @@ from app.services.scan_orchestrator import orchestrate_scan
 from typing import List
 from app.services.archive_scanner import scan_files
 from app.services.llm_engine import review_ambiguous_findings
+from app.services.github_auth import get_app_installations, create_installation_token, get_installation_repositories
+from app.services.github_scanner import download_and_scan_github
 
 router = APIRouter()
 
@@ -25,6 +28,12 @@ class ScanRequest(BaseModel):
 
 class RegexPatternsPayload(BaseModel):
     patterns: list[dict]
+
+class GithubScanRequest(BaseModel):
+    installation_id: int
+    owner: str
+    repo: str
+    branch: str = "main"
 
 def _severity_counts(findings: list[dict]) -> dict:
     critical = sum(
@@ -268,3 +277,95 @@ def restore_backup():
         "status":"restored",
         "patterns": backup_patterns,
     }
+    
+@router.get("/github/installations")
+def list_github_installations():
+    try:
+        installations = get_app_installations()
+    
+    except Exception as exc:
+        raise HTTPException(status_code=502,detail=str(exc)) from exc
+    
+    return[{"installation_id":item["id"],"account":item["account"]["login"]} for item in installations]
+
+@router.get("/github/repositories")
+def list_github_repositories(installation_id: int):
+    try:
+        repos = get_installation_repositories(installation_id)
+    
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    
+    return[
+        {
+            "full_name":r["full_name"],
+            "owner":r["owner"]["login"],
+            "name":r["name"],
+            "private":r["private"],
+            "default_branch":r.get("default_branch","main")
+            }
+        for r in repos
+        ] 
+    
+@router.post("/github/scan")
+def scan_github_repository(payload: GithubScanRequest, db: Session = Depends(get_db)):
+    try:
+         # ---------------------------------------------------------
+        # 1. Verify that the requested repository belongs to the
+        #    selected GitHub App installation.
+        # ---------------------------------------------------------
+        repos = get_installation_repositories(payload.installation_id)
+        requested_full_name = (f"{payload.owner}/{payload.repo}")
+        repository = next(
+            (
+                repo
+                for repo in repos
+                if repo["full_name"].lower() == requested_full_name.lower()
+            ),
+            None
+        )
+        
+        if repository is None:
+            raise HTTPException(status_code=403,detail=("This repository is non accessible through the selected Github installation."))
+        
+        # ---------------------------------------------------------
+        # 2. Create the installation token server-side.
+        #    The token is NEVER returned to the frontend.
+        # ---------------------------------------------------------
+        token = create_installation_token(payload.installation_id)
+        
+        # ---------------------------------------------------------
+        # 3. Build the repository URL.
+        # ---------------------------------------------------------
+        repo_url = (f"https://github.com/{payload.owner}/{payload.repo}")
+        
+         # ---------------------------------------------------------
+        # 4. Download and scan the repository.
+        # ---------------------------------------------------------
+        findings = download_and_scan_github(repo_url,branch=payload.branch,token=token)
+        
+        # ---------------------------------------------------------
+        # 5. Review ambiguous findings using the existing logic.
+        # ---------------------------------------------------------
+        findings = review_ambiguous_findings(findings)
+        
+        # ---------------------------------------------------------
+        # 6. Save the scan using the existing persistence path.
+        # ---------------------------------------------------------
+        target_name=(f"{payload.owner}/{payload.repo}")
+        
+        return _build_scan_response(db,target_name,findings)
+        
+    except HTTPException:
+        # Preserve HTTP errors we explicitly created above.
+        raise
+    
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"GitHub API request failed : {exc}") from exc
+    
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail = str(exc)) from exc
+    
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"GitHub scan failed: {exc}") from exc
+    
