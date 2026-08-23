@@ -3,9 +3,11 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import requests   
+import os
 
 from app.core.database import get_db
 from app.models.audit import ScanReport, Finding
@@ -277,7 +279,57 @@ def restore_backup():
         "status":"restored",
         "patterns": backup_patterns,
     }
-    
+  
+@router.get("/github/connect")
+def connect_github():
+    install_url = os.getenv("GITHUB_APP_INSTALL_URL")
+
+    if not install_url:
+        raise HTTPException(
+            status_code=500,
+            detail="GITHUB_APP_INSTALL_URL is not configured.",
+        )
+
+    return RedirectResponse(url=install_url)  
+
+@router.get("/github/setup")
+def github_setup(installation_id: int):
+    try:
+        installations = get_app_installations()
+
+        installation = next(
+            (
+                item
+                for item in installations
+                if item["id"] == installation_id
+            ),
+            None,
+        )
+
+        if installation is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid GitHub App installation.",
+            )
+
+        frontend_url = os.getenv(
+            "FRONTEND_URL",
+            "http://localhost:5173",
+        )
+
+        return RedirectResponse(
+            url=f"{frontend_url}?github_connected=true"
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+          
 @router.get("/github/installations")
 def list_github_installations():
     try:

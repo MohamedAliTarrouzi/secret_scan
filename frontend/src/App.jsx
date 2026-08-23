@@ -1,41 +1,44 @@
-import { useEffect, useState } from "react"
-import { Shield, Search, History as HistoryIcon, Braces } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Shield, Search, History as HistoryIcon, Braces, GitBranch} from "lucide-react";
 
-import SubmissionPage from "./pages/SubmissionPage"
-import ResultsPage from "./pages/ResultsPage"
-import HistoryPage from "./pages/HistoryPage"
-import RegexPatternsPage from "./pages/RegexPatternsPages"
-import { getHistory } from "./services/api"
+
+import SubmissionPage from "./pages/SubmissionPage";
+import ResultsPage from "./pages/ResultsPage";
+import HistoryPage from "./pages/HistoryPage";
+import RegexPatternsPage from "./pages/RegexPatternsPages";
+import { getHistory } from "./services/api";
+
+
 
 const NAV_ITEMS = [
   { id: "submission", label: "Scan", icon: Search },
   { id: "results", label: "Results", icon: Shield, requiresResult: true },
   { id: "regex", label: "Regex Patterns", icon: Braces },
   { id: "history", label: "History", icon: HistoryIcon },
-]
+];
 
 export default function App() {
-  const [view, setView] = useState("submission")
-  const [results, setResults] = useState(null)
-  const [history, setHistory] = useState([])
+  const [view, setView] = useState("submission");
+  const [results, setResults] = useState(null);
+  const [history, setHistory] = useState([]);
 
   const refreshHistory = async () => {
     try {
-      const response = await getHistory()
-      setHistory(response.data || [])
+      const response = await getHistory();
+      setHistory(response.data || []);
     } catch (err) {
-      console.error("Failed to load history:", err)
+      console.error("Failed to load history:", err);
     }
-  }
+  };
 
   useEffect(() => {
-    refreshHistory()
-  }, [])
+    refreshHistory();
+  }, []);
 
   const goTo = (id) => {
-    if (id === "history") refreshHistory()
-    setView(id)
-  }
+    if (id === "history") refreshHistory();
+    setView(id);
+  };
 
   return (
     <div className="min-h-screen flex bg-bg-primary text-slate-100">
@@ -53,8 +56,8 @@ export default function App() {
 
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV_ITEMS.map(({ id, label, icon: Icon, requiresResult }) => {
-            const disabled = requiresResult && !results
-            const active = view === id
+            const disabled = requiresResult && !results;
+            const active = view === id;
 
             return (
               <button
@@ -67,13 +70,15 @@ export default function App() {
                   active
                     ? "bg-slate-800 text-white border-l-2 border-emerald-400 pl-[14px]"
                     : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
-                  disabled ? "opacity-40 cursor-not-allowed hover:bg-transparent" : "",
+                  disabled
+                    ? "opacity-40 cursor-not-allowed hover:bg-transparent"
+                    : "",
                 ].join(" ")}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {label}
               </button>
-            )
+            );
           })}
         </nav>
 
@@ -93,20 +98,22 @@ export default function App() {
           {view === "submission" && (
             <SubmissionPage
               onScanCompleted={(data) => {
-                setResults(data)
-                setView("results")
-                refreshHistory()
+                setResults(data);
+                setView("results");
+                refreshHistory();
               }}
             />
           )}
 
           {view === "results" && <ResultsPage result={results} />}
 
-          {view === "history" && <HistoryPage items={history} onHistoryChanged={refreshHistory}/>}
+          {view === "history" && (
+            <HistoryPage items={history} onHistoryChanged={refreshHistory} />
+          )}
 
           {view === "regex" && <RegexPatternsPage />}
         </div>
       </main>
     </div>
-  )
+  );
 }
