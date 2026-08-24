@@ -1,6 +1,14 @@
-version: '3.8'
-
 services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/litellm_config.yaml:/app/config.yaml:ro
+    env_file:
+      - ./backend/.env
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+
   backend:
     build: ./backend
     ports:
@@ -8,8 +16,17 @@ services:
     volumes:
       - ./backend:/app
       - backend_db:/app/data
+      # Adjust the host-side filename to match your actual .pem file in backend/
+      -./backend/secretscan-ai-test.2026-08-21.private-key.pem:ro
+
+    env_file:
+      - ./backend/.env
     environment:
-      - SQLALCHEMY_DATABASE_URL=sqlite:////app/data/secret_scan.db
+      - SQLALCHEMY_DATABASE_URL=sqlite:////secret_scan.db
+      - GITHUB_PRIVATE_KEY_PATH=secretscan-ai-test.2026-08-21.private-key.pem
+      - LITELLM_GATEWAY_URL=http://localhost:4000
+    depends_on:
+      - litellm
 
   frontend:
     build: ./frontend
