@@ -365,7 +365,7 @@ def list_github_repositories(user: GithubUser = Depends(get_current_github_user)
             "owner":r["owner"]["login"],
             "name":r["name"],
             "private":r["private"],
-            "default":r.get("default_branch","main")
+            "default_branch":r.get("default_branch","main")
         } for r in repos
     ] 
     
@@ -381,7 +381,7 @@ def scan_github_repository(payload: GithubScanRequest, db: Session = Depends(get
             raise HTTPException(status_code=403,detail="This repository is not accessible through your GitHub installation.")
         
         token = create_installation_token(user.installation_id)
-        repo_url = f"https//github.com/{payload.owner}/{payload.repo}"
+        repo_url = f"https://github.com/{payload.owner}/{payload.repo}"
         findings = download_and_scan_github(repo_url, branch=payload.branch,token=token)
         findings = review_ambiguous_findings(findings)
         
