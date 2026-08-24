@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { runScan } from "../services/api";
 import {
-  getInstallations,
-  getRepositories,
+  getGithubMe,
+  getGithubRepositories,
   scanGithubRepo,
   connectGithub,
 } from "../services/github";
@@ -27,12 +27,11 @@ export default function SubmissionPage({ onScanCompleted }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [installations, setInstallations] = useState([]);
-  const [installationId, setInstallationId] = useState(null);
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [checkingGithub, setCheckingGithub] = useState(false);
   const [githubRepos, setGithubRepos] = useState([]);
   const [selectedGithubRepo, setSelectedGithubRepo] = useState(null);
   const [githubBranch, setGithubBranch] = useState("main");
-  const [loadingInstallations, setLoadingInstallations] = useState(false);
   const [loadingGithubRepos, setLoadingGithubRepos] = useState(false);
 
   const modes = [
@@ -51,7 +50,7 @@ export default function SubmissionPage({ onScanCompleted }) {
     {
       id: "github",
       label: "GitHub",
-      description: "Scan via your GitHub App install",
+      description: "Scan your own private repos",
       icon: GitBranch,
     },
     {
@@ -74,37 +73,36 @@ export default function SubmissionPage({ onScanCompleted }) {
     },
   ];
 
-  //Verify connection to github
+  // Land back on the GitHub tab after the /github/callback redirect, and
+  // strip the query param so refreshing doesn't re-trigger this.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
     if (params.get("github_connected") === "true") {
       setMode("github");
-
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  // Load installations once the user switches to the GitHub tab.
+  // Check connection status once the user switches to the GitHub tab.
   useEffect(() => {
     if (mode !== "github") return;
 
-    setLoadingInstallations(true);
+    setCheckingGithub(true);
     setError(null);
 
-    getInstallations()
-      .then((res) => setInstallations(res.data || []))
-      .catch((err) =>
-        setError(
-          err?.response?.data?.detail || "Failed to load GitHub installations.",
-        ),
-      )
-      .finally(() => setLoadingInstallations(false));
+    getGithubMe()
+      .then((res) => {
+        setGithubConnected(!!res.data.connected);
+      })
+      .catch(() => {
+        setGithubConnected(false);
+      })
+      .finally(() => setCheckingGithub(false));
   }, [mode]);
 
-  // Load repos whenever the selected installation changes.
+  // Load repos once we know the account is connected.
   useEffect(() => {
-    if (!installationId) {
+    if (!githubConnected) {
       setGithubRepos([]);
       setSelectedGithubRepo(null);
       return;
@@ -113,7 +111,7 @@ export default function SubmissionPage({ onScanCompleted }) {
     setLoadingGithubRepos(true);
     setError(null);
 
-    getRepositories(installationId)
+    getGithubRepositories()
       .then((res) => {
         setGithubRepos(res.data || []);
         setSelectedGithubRepo(null);
@@ -124,7 +122,7 @@ export default function SubmissionPage({ onScanCompleted }) {
         ),
       )
       .finally(() => setLoadingGithubRepos(false));
-  }, [installationId]);
+  }, [githubConnected]);
 
   // Default the branch field to the repo's default branch on selection.
   useEffect(() => {
@@ -136,7 +134,7 @@ export default function SubmissionPage({ onScanCompleted }) {
   const validate = () => {
     if (mode === "code") return code.trim().length > 0;
     if (mode === "url") return repoUrl.trim().length > 5;
-    if (mode === "github") return !!(installationId && selectedGithubRepo);
+    if (mode === "github") return !!selectedGithubRepo;
     if (mode === "zip") return zipFile instanceof File;
     if (mode === "folder" || mode === "files") return multiFiles.length > 0;
     return false;
@@ -149,7 +147,7 @@ export default function SubmissionPage({ onScanCompleted }) {
     if (!validate()) {
       setError(
         mode === "github"
-          ? "Please select a GitHub account and repository."
+          ? "Please connect GitHub and select a repository."
           : "Please provide the required input for the selected scan type.",
       );
       return;
@@ -162,7 +160,6 @@ export default function SubmissionPage({ onScanCompleted }) {
 
       if (mode === "github") {
         const resp = await scanGithubRepo(
-          installationId,
           selectedGithubRepo.owner,
           selectedGithubRepo.name,
           githubBranch,
@@ -344,105 +341,86 @@ const API_KEY = "your-secret-key";`}
           {/* GitHub App */}
           {mode === "github" && (
             <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-200">
-                  GitHub account
-                </label>
+              {checkingGithub ? (
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking GitHub connection...
+                </div>
+              ) : !githubConnected ? (
+                <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-5">
+                  <p className="text-sm text-slate-300">
+                    Connect your GitHub account to scan your private
+                    repositories.
+                  </p>
 
-                {loadingInstallations ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading GitHub installations...
-                  </div>
-                ) : installations.length === 0 ? (
-                  <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-5">
-                    <p className="text-sm text-slate-300">
-                      Connect your GitHub account to scan private repositories.
-                    </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    You will choose which repositories SecretScan can access
+                    on GitHub.
+                  </p>
 
-                    <p className="mt-2 text-xs text-slate-500">
-                      You will choose which repositories SecretScan can access
-                      on GitHub.
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={connectGithub}
-                      className="mt-4 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-600"
-                    >
-                      Connect GitHub
-                    </button>
-                  </div>
-                ) : (
-                  <select
-                    value={installationId ?? ""}
-                    onChange={(e) =>
-                      setInstallationId(Number(e.target.value) || null)
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
+                  <button
+                    type="button"
+                    onClick={connectGithub}
+                    className="mt-4 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-600"
                   >
-                    <option value="">Select an account...</option>
-                    {installations.map((installation) => (
-                      <option
-                        key={installation.installation_id}
-                        value={installation.installation_id}
+                    Connect GitHub
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-200">
+                      Repository
+                    </label>
+
+                    {loadingGithubRepos ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading repositories...
+                      </div>
+                    ) : githubRepos.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        No repositories found for this installation.
+                      </p>
+                    ) : (
+                      <select
+                        value={selectedGithubRepo?.full_name ?? ""}
+                        onChange={(e) =>
+                          setSelectedGithubRepo(
+                            githubRepos.find(
+                              (repo) => repo.full_name === e.target.value,
+                            ) || null,
+                          )
+                        }
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
                       >
-                        {installation.account}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
+                        <option value="">Select a repository...</option>
+                        {githubRepos.map((repo) => (
+                          <option key={repo.full_name} value={repo.full_name}>
+                            {repo.full_name}
+                            {repo.private ? " (private)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
 
-              {installationId && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-200">
-                    Repository
-                  </label>
+                  {selectedGithubRepo && (
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-200">
+                        Branch
+                      </label>
 
-                  {loadingGithubRepos ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading repositories...
+                      <input
+                        type="text"
+                        value={githubBranch}
+                        onChange={(e) => setGithubBranch(e.target.value)}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
+                        placeholder="main"
+                      />
                     </div>
-                  ) : (
-                    <select
-                      value={selectedGithubRepo?.full_name ?? ""}
-                      onChange={(e) =>
-                        setSelectedGithubRepo(
-                          githubRepos.find(
-                            (repo) => repo.full_name === e.target.value,
-                          ) || null,
-                        )
-                      }
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
-                    >
-                      <option value="">Select a repository...</option>
-                      {githubRepos.map((repo) => (
-                        <option key={repo.full_name} value={repo.full_name}>
-                          {repo.full_name}
-                          {repo.private ? " (private)" : ""}
-                        </option>
-                      ))}
-                    </select>
                   )}
-                </div>
-              )}
-
-              {selectedGithubRepo && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-200">
-                    Branch
-                  </label>
-
-                  <input
-                    type="text"
-                    value={githubBranch}
-                    onChange={(e) => setGithubBranch(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
-                    placeholder="main"
-                  />
-                </div>
+                </>
               )}
             </div>
           )}

@@ -1,9 +1,10 @@
 import json
 import tempfile
 from pathlib import Path
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import requests   
@@ -11,12 +12,15 @@ import os
 
 from app.core.database import get_db
 from app.models.audit import ScanReport, Finding
+from app.models.user import GithubUser, OAuthState
 from app.services.scan_orchestrator import orchestrate_scan
 from typing import List
 from app.services.archive_scanner import scan_files
 from app.services.llm_engine import review_ambiguous_findings
-from app.services.github_auth import get_app_installations, create_installation_token, get_installation_repositories
+from app.services.github_auth import get_app_installations, create_installation_token, get_installation_repositories,  get_github_authorization_url, exchange_code_for_token, get_github_user
 from app.services.github_scanner import download_and_scan_github
+from app.core.session import create_session_cookie_value, SESSION_COOKIE_NAME, SESSION_MAX_AGE
+from app.core.deps import get_current_github_user
 
 router = APIRouter()
 
@@ -32,10 +36,11 @@ class RegexPatternsPayload(BaseModel):
     patterns: list[dict]
 
 class GithubScanRequest(BaseModel):
-    installation_id: int
     owner: str
     repo: str
     branch: str = "main"
+    
+
 
 def _severity_counts(findings: list[dict]) -> dict:
     critical = sum(
@@ -280,144 +285,111 @@ def restore_backup():
         "patterns": backup_patterns,
     }
   
+
 @router.get("/github/connect")
-def connect_github():
+def github_connect(db: Session = Depends(get_db)):
+    state = secrets.token_urlsafe(32)
+    db.add(OAuthState(state=state))
+    db.commit()
+    
     install_url = os.getenv("GITHUB_APP_INSTALL_URL")
-
     if not install_url:
-        raise HTTPException(
-            status_code=500,
-            detail="GITHUB_APP_INSTALL_URL is not configured.",
-        )
-
-    return RedirectResponse(url=install_url)  
-
-@router.get("/github/setup")
-def github_setup(installation_id: int):
-    try:
-        installations = get_app_installations()
-
-        installation = next(
-            (
-                item
-                for item in installations
-                if item["id"] == installation_id
-            ),
-            None,
-        )
-
-        if installation is None:
-            raise HTTPException(
-                status_code=403,
-                detail="Invalid GitHub App installation.",
-            )
-
-        frontend_url = os.getenv(
-            "FRONTEND_URL",
-            "http://localhost:5173",
-        )
-
-        return RedirectResponse(
-            url=f"{frontend_url}?github_connected=true"
-        )
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=str(exc),
-        ) from exc
-          
-@router.get("/github/installations")
-def list_github_installations():
-    try:
-        installations = get_app_installations()
+        raise HTTPException(status_code=500, detail="GITHUB_APP_INSTALL_URL is not configured")
     
-    except Exception as exc:
-        raise HTTPException(status_code=502,detail=str(exc)) from exc
+    sep = "&" if "?" in install_url else "?"
+    return RedirectResponse(url=f"{install_url}{sep}state={state}")
+
+
+@router.get("/github/callback")
+def github_callback(code: str, state: str, installation_id: int | None = None, setup_action: str | None = None, db: Session = Depends(get_db)):
+    #One-Time use state check
+    stored_state = db.query(OAuthState).filter(OAuthState.state == state).first()
+    if stored_state is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state" )
+    db.delete(stored_state)
+    db.commit()
     
-    return[{"installation_id":item["id"],"account":item["account"]["login"]} for item in installations]
+    try:
+        token_data = exchange_code_for_token(code)
+        access_token = token_data["access_token"]
+        github_user = get_github_user(access_token)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Github authorization failed: {exc}") from exc
+    
+    user = (db.query(GithubUser).filter(GithubUser.github_id == github_user["id"]).first())
+    if user is None:
+        user = GithubUser(github_id=github_user["id"],login=github_user["login"])
+        db.add(user)
+    
+    user.login = github_user["login"]
+    user.name = github_user.get("name")
+    if installation_id is not None:
+        user.installation_id = installation_id
+    
+    db.commit()
+    db.refresh(user)
+    
+    frontend_url = os.getenv("FRONTEND_URL","http://localhost:5173")
+    response = RedirectResponse(url=f"{frontend_url}?github_connected=true")
+    response.set_cookie(key=SESSION_COOKIE_NAME,value=create_session_cookie_value(user.id),httponly=True,max_age=SESSION_MAX_AGE,samesite="lax")
+    return response
+
+@router.get("/github/me")
+def github_me(user: GithubUser = Depends(get_current_github_user)):
+    return{"login":user.login,"name":user.name,"connected": user.installation_id is not None}
+
+@router.post("/github/logout")
+def github_logout():
+    response = JSONResponse({"status":"logged_out"})
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    return response
 
 @router.get("/github/repositories")
-def list_github_repositories(installation_id: int):
-    try:
-        repos = get_installation_repositories(installation_id)
+def list_github_repositories(user: GithubUser = Depends(get_current_github_user)):
+    if user.installation_id is None:
+        raise HTTPException(status_code=409,detail="GitHub App is not installed on this account yet.")
     
+    try:
+        repos = get_installation_repositories(user.installation_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     
-    return[
+    return [
         {
             "full_name":r["full_name"],
             "owner":r["owner"]["login"],
             "name":r["name"],
             "private":r["private"],
-            "default_branch":r.get("default_branch","main")
-            }
-        for r in repos
-        ] 
+            "default":r.get("default_branch","main")
+        } for r in repos
+    ] 
     
 @router.post("/github/scan")
-def scan_github_repository(payload: GithubScanRequest, db: Session = Depends(get_db)):
+def scan_github_repository(payload: GithubScanRequest, db: Session = Depends(get_db), user: GithubUser = Depends(get_current_github_user)):
+    if user.installation_id is None:
+        raise HTTPException(status_code=409,detail="Connect your Github account first.")
     try:
-         # ---------------------------------------------------------
-        # 1. Verify that the requested repository belongs to the
-        #    selected GitHub App installation.
-        # ---------------------------------------------------------
-        repos = get_installation_repositories(payload.installation_id)
-        requested_full_name = (f"{payload.owner}/{payload.repo}")
-        repository = next(
-            (
-                repo
-                for repo in repos
-                if repo["full_name"].lower() == requested_full_name.lower()
-            ),
-            None
-        )
-        
+        repos= get_installation_repositories(user.installation_id)
+        requested= f"{payload.owner}/{payload.repo}".lower()
+        repository = next((r for r in repos if r["full_name"].lower()==requested), None)
         if repository is None:
-            raise HTTPException(status_code=403,detail=("This repository is non accessible through the selected Github installation."))
+            raise HTTPException(status_code=403,detail="This repository is not accessible through your GitHub installation.")
         
-        # ---------------------------------------------------------
-        # 2. Create the installation token server-side.
-        #    The token is NEVER returned to the frontend.
-        # ---------------------------------------------------------
-        token = create_installation_token(payload.installation_id)
-        
-        # ---------------------------------------------------------
-        # 3. Build the repository URL.
-        # ---------------------------------------------------------
-        repo_url = (f"https://github.com/{payload.owner}/{payload.repo}")
-        
-         # ---------------------------------------------------------
-        # 4. Download and scan the repository.
-        # ---------------------------------------------------------
-        findings = download_and_scan_github(repo_url,branch=payload.branch,token=token)
-        
-        # ---------------------------------------------------------
-        # 5. Review ambiguous findings using the existing logic.
-        # ---------------------------------------------------------
+        token = create_installation_token(user.installation_id)
+        repo_url = f"https//github.com/{payload.owner}/{payload.repo}"
+        findings = download_and_scan_github(repo_url, branch="payload.branch",token=token)
         findings = review_ambiguous_findings(findings)
         
-        # ---------------------------------------------------------
-        # 6. Save the scan using the existing persistence path.
-        # ---------------------------------------------------------
-        target_name=(f"{payload.owner}/{payload.repo}")
-        
-        return _build_scan_response(db,target_name,findings)
-        
+        target_name= f"{payload.owner}/{payload.repo}"
+        return _build_scan_response(db, target_name, findings)
+    
     except HTTPException:
-        # Preserve HTTP errors we explicitly created above.
         raise
-    
     except requests.exceptions.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"GitHub API request failed : {exc}") from exc
-    
+        raise HTTPException(status_code=502, detail=f"GitHub API request failed: {exc}") from exc
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail = str(exc)) from exc
-    
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"GitHub scan failed: {exc}") from exc
+        
     

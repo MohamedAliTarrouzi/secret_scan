@@ -1,7 +1,8 @@
 import os
 import time
 from pathlib import Path
-
+import secrets
+from urllib.parse import urlencode
 import jwt
 import requests
 from dotenv import load_dotenv
@@ -13,7 +14,8 @@ GITHUB_API_URL = "https://api.github.com"
 GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY_PATH")
-
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+GITHUB_CALLBACK_URL = os.getenv("GITHUB_CALLBACK_URL","http://localhost:8000/api/github/callback")
 
 def _get_private_key() -> str:
     if not GITHUB_PRIVATE_KEY_PATH:
@@ -122,3 +124,45 @@ def get_installation_repositories(
         )
 
     return response.json().get("repositories", [])
+
+def get_github_authorization_url(state: str) -> str:
+    if not GITHUB_CLIENT_ID:
+        raise RuntimeError("GITHUB_CLIENT_ID is not configured")
+
+    params = {"client_id": GITHUB_CLIENT_ID, "redirect_uri": GITHUB_CALLBACK_URL, "state": state}
+
+    return "https://github.com/login/oauth/authorize?" + urlencode(params)
+
+def exchange_code_for_token(code: str) -> dict:
+    if not GITHUB_CLIENT_ID:
+        raise RuntimeError("GITHUB_CLIENT_ID is not configured")
+
+    if not GITHUB_CLIENT_SECRET:
+        raise RuntimeError("GITHUB_CLIENT_SECRET is not configured")
+
+    response = requests.post("https://github.com/login/oauth/access_token",data={"client_id": GITHUB_CLIENT_ID, "client_secret": GITHUB_CLIENT_SECRET,"code": code},
+        headers={"Accept": "application/json"},timeout=15)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"GitHub OAuth token exchange failed: {response.status_code} {response.text}")
+    
+    data = response.json()
+
+    if "error" in data:
+        raise RuntimeError(
+            f"GitHub OAuth error: {data.get('error_description', data['error'])}"
+        )
+
+    return data
+
+def get_github_user(access_token: str) -> dict:
+    response = requests.get("https://api.github.com/user",headers={"Authorization": f"Bearer {access_token}","Accept": "application/vnd.github+json","X-GitHub-Api-Version": "2026-03-10"},
+        timeout=15)
+
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"GitHub user request failed: "
+            f"{response.status_code} {response.text}"
+        )
+
+    return response.json()
