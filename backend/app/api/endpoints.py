@@ -17,7 +17,7 @@ from app.services.scan_orchestrator import orchestrate_scan
 from typing import List
 from app.services.archive_scanner import scan_files
 from app.services.llm_engine import review_ambiguous_findings
-from app.services.github_auth import get_app_installations, create_installation_token, get_installation_repositories,  get_github_authorization_url, exchange_code_for_token, get_github_user
+from app.services.github_auth import get_app_installations, create_installation_token, get_installation_repositories,  get_github_authorization_url, exchange_code_for_token, get_github_user, get_user_installations
 from app.services.github_scanner import download_and_scan_github
 from app.core.session import create_session_cookie_value, SESSION_COOKIE_NAME, SESSION_MAX_AGE
 from app.core.deps import get_current_github_user
@@ -291,13 +291,8 @@ def github_connect(db: Session = Depends(get_db)):
     state = secrets.token_urlsafe(32)
     db.add(OAuthState(state=state))
     db.commit()
-    
-    install_url = os.getenv("GITHUB_APP_INSTALL_URL")
-    if not install_url:
-        raise HTTPException(status_code=500, detail="GITHUB_APP_INSTALL_URL is not configured")
-    
-    sep = "&" if "?" in install_url else "?"
-    return RedirectResponse(url=f"{install_url}{sep}state={state}")
+
+    return RedirectResponse(url=get_github_authorization_url(state))
 
 
 @router.get("/github/callback")
@@ -323,9 +318,19 @@ def github_callback(code: str, state: str, installation_id: int | None = None, s
     
     user.login = github_user["login"]
     user.name = github_user.get("name")
+    # Prefer the installation_id from the query param (fresh install just happened);
+    # otherwise, check if this user already has the app installed.
     if installation_id is not None:
         user.installation_id = installation_id
     
+    else:
+        try:
+            installations = get_user_installations(access_token)
+            if installations:
+                user.installation_id = installations[0]["id"]
+        except Exception:
+            pass
+            
     db.commit()
     db.refresh(user)
     
@@ -377,7 +382,7 @@ def scan_github_repository(payload: GithubScanRequest, db: Session = Depends(get
         
         token = create_installation_token(user.installation_id)
         repo_url = f"https//github.com/{payload.owner}/{payload.repo}"
-        findings = download_and_scan_github(repo_url, branch="payload.branch",token=token)
+        findings = download_and_scan_github(repo_url, branch=payload.branch,token=token)
         findings = review_ambiguous_findings(findings)
         
         target_name= f"{payload.owner}/{payload.repo}"

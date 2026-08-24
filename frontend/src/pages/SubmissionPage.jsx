@@ -16,6 +16,7 @@ import {
   getGithubRepositories,
   scanGithubRepo,
   connectGithub,
+  disconnectGithub 
 } from "../services/github";
 
 export default function SubmissionPage({ onScanCompleted }) {
@@ -138,6 +139,17 @@ export default function SubmissionPage({ onScanCompleted }) {
     if (mode === "zip") return zipFile instanceof File;
     if (mode === "folder" || mode === "files") return multiFiles.length > 0;
     return false;
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectGithub();
+      setGithubConnected(false);
+      setGithubRepos([]);
+      setSelectedGithubRepo(null);
+    } catch (err) {
+      setError("Failed to disconnect GitHub.");
+    }
   };
 
   const onSubmit = async (e) => {
@@ -354,8 +366,8 @@ const API_KEY = "your-secret-key";`}
                   </p>
 
                   <p className="mt-2 text-xs text-slate-500">
-                    You will choose which repositories SecretScan can access
-                    on GitHub.
+                    You will choose which repositories SecretScan can access on
+                    GitHub.
                   </p>
 
                   <button
@@ -403,6 +415,13 @@ const API_KEY = "your-secret-key";`}
                         ))}
                       </select>
                     )}
+                    <button
+                          type="button"
+                          onClick={handleDisconnect}
+                          className="text-xs text-slate-400 hover:text-red-400 transition"
+                        >
+                          Disconnect GitHub
+                        </button>
                   </div>
 
                   {selectedGithubRepo && (

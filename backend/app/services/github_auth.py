@@ -166,3 +166,10 @@ def get_github_user(access_token: str) -> dict:
         )
 
     return response.json()
+
+def get_user_installations(access_token: str) ->list[dict]:
+    response = requests.get(f"{GITHUB_API_URL}/user/installations",headers=_github_headers(access_token),timeout=15)
+    if response.status_code != 200:
+        raise RuntimeError(f"GitHub API error while listing user installations: {response.status_code}{response.text}")
+    
+    return response.json().get("installations",[])
