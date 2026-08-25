@@ -19,6 +19,30 @@ import {
   disconnectGithub,
 } from "../services/github";
 
+// FastAPI/Pydantic validation errors return `detail` as an array of
+// {type, loc, msg, input} objects instead of a plain string (this is what
+// you get on a 422). Rendering that array directly as a React child crashes
+// with "Objects are not valid as a React child". This normalizes any error
+// shape (string detail, array of pydantic errors, plain Error, etc.) into a
+// safe string before it ever reaches JSX.
+function extractErrorMessage(err) {
+  const detail = err?.response?.data?.detail;
+
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (typeof d === "string" ? d : d?.msg || JSON.stringify(d)))
+      .join("; ");
+  }
+
+  if (detail && typeof detail === "object") {
+    return detail.msg || JSON.stringify(detail);
+  }
+
+  return err?.message || String(err);
+}
+
 export default function SubmissionPage({ onScanCompleted }) {
   const [mode, setMode] = useState("code");
   const [code, setCode] = useState("");
@@ -115,11 +139,7 @@ export default function SubmissionPage({ onScanCompleted }) {
         setGithubRepos(res.data || []);
         setSelectedGithubRepo(null);
       })
-      .catch((err) =>
-        setError(
-          err?.response?.data?.detail || "Failed to load GitHub repositories.",
-        ),
-      )
+      .catch((err) => setError(extractErrorMessage(err)))
       .finally(() => setLoadingGithubRepos(false));
   }, [githubConnected]);
 
@@ -187,7 +207,9 @@ export default function SubmissionPage({ onScanCompleted }) {
         );
 
         json = await resp.json();
-        if (!resp.ok) throw new Error(json.detail || JSON.stringify(json));
+        if (!resp.ok) {
+          throw { response: { data: json } };
+        }
       } else if (mode === "zip") {
         const fd = new FormData();
         fd.append("file", zipFile);
@@ -198,7 +220,9 @@ export default function SubmissionPage({ onScanCompleted }) {
         );
 
         json = await resp.json();
-        if (!resp.ok) throw new Error(json.detail || JSON.stringify(json));
+        if (!resp.ok) {
+          throw { response: { data: json } };
+        }
       } else {
         const payload =
           mode === "code"
@@ -211,7 +235,7 @@ export default function SubmissionPage({ onScanCompleted }) {
 
       onScanCompleted?.(json);
     } catch (err) {
-      setError(err?.response?.data?.detail || err.message || String(err));
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

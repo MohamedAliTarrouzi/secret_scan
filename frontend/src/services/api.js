@@ -5,7 +5,7 @@ const api = axios.create({
     withCredentials: true,
 })
 
-export const runScan = (target, extra = {} ) => api.post("/scan",{target, ...extra})
+export const runScan = (payload) => api.post("/scan", payload)
 export const getHistory = () => api.get("/history")
 export const deleteHistoryItem = (scanId) => api.delete(`/history/${scanId}`)
 export const deleteAllHistory = () => api.delete("/history")
