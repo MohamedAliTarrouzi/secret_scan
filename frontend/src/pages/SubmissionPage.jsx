@@ -16,7 +16,7 @@ import {
   getGithubRepositories,
   scanGithubRepo,
   connectGithub,
-  disconnectGithub 
+  disconnectGithub,
 } from "../services/github";
 
 export default function SubmissionPage({ onScanCompleted }) {
@@ -43,15 +43,9 @@ export default function SubmissionPage({ onScanCompleted }) {
       icon: Code2,
     },
     {
-      id: "url",
-      label: "Repository URL",
-      description: "Scan a public Git repository",
-      icon: GitBranch,
-    },
-    {
-      id: "github",
-      label: "GitHub",
-      description: "Scan your own private repos",
+      id: "repository",
+      label: "Repository",
+      description: "Scan a public or private Git repository",
       icon: GitBranch,
     },
     {
@@ -74,19 +68,24 @@ export default function SubmissionPage({ onScanCompleted }) {
     },
   ];
 
-  // Land back on the GitHub tab after the /github/callback redirect, and
-  // strip the query param so refreshing doesn't re-trigger this.
+  // Reset local file selection states when changing modes
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    setError(null);
+    setZipFile(null);
+    setMultiFiles([]);
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("github_connected") === "true") {
-      setMode("github");
+      setMode("repository");
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  // Check connection status once the user switches to the GitHub tab.
   useEffect(() => {
-    if (mode !== "github") return;
+    if (mode !== "repository") return;
 
     setCheckingGithub(true);
     setError(null);
@@ -101,7 +100,6 @@ export default function SubmissionPage({ onScanCompleted }) {
       .finally(() => setCheckingGithub(false));
   }, [mode]);
 
-  // Load repos once we know the account is connected.
   useEffect(() => {
     if (!githubConnected) {
       setGithubRepos([]);
@@ -125,7 +123,6 @@ export default function SubmissionPage({ onScanCompleted }) {
       .finally(() => setLoadingGithubRepos(false));
   }, [githubConnected]);
 
-  // Default the branch field to the repo's default branch on selection.
   useEffect(() => {
     if (selectedGithubRepo) {
       setGithubBranch(selectedGithubRepo.default_branch || "main");
@@ -134,8 +131,9 @@ export default function SubmissionPage({ onScanCompleted }) {
 
   const validate = () => {
     if (mode === "code") return code.trim().length > 0;
-    if (mode === "url") return repoUrl.trim().length > 5;
-    if (mode === "github") return !!selectedGithubRepo;
+    if (mode === "repository") {
+      return repoUrl.trim().length > 5 || !!selectedGithubRepo;
+    }
     if (mode === "zip") return zipFile instanceof File;
     if (mode === "folder" || mode === "files") return multiFiles.length > 0;
     return false;
@@ -158,9 +156,9 @@ export default function SubmissionPage({ onScanCompleted }) {
 
     if (!validate()) {
       setError(
-        mode === "github"
-          ? "Please connect GitHub and select a repository."
-          : "Please provide the required input for the selected scan type.",
+        mode === "repository"
+          ? "Please enter a repository URL or connect GitHub and select a repository."
+          : "Please provide valid source input before scanning.",
       );
       return;
     }
@@ -170,7 +168,7 @@ export default function SubmissionPage({ onScanCompleted }) {
     try {
       let json;
 
-      if (mode === "github") {
+      if (mode === "repository" && selectedGithubRepo) {
         const resp = await scanGithubRepo(
           selectedGithubRepo.owner,
           selectedGithubRepo.name,
@@ -207,7 +205,7 @@ export default function SubmissionPage({ onScanCompleted }) {
             ? { target: "inline", content: code }
             : { target: repoUrl };
 
-        const resp = await runScan(payload.target, payload);
+        const resp = await runScan(payload);
         json = resp.data;
       }
 
@@ -254,10 +252,7 @@ export default function SubmissionPage({ onScanCompleted }) {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => {
-                    setMode(item.id);
-                    setError(null);
-                  }}
+                  onClick={() => handleModeChange(item.id)}
                   className={`group rounded-xl border p-4 text-left transition ${
                     active
                       ? "border-blue-500/60 bg-blue-500/10"
@@ -316,60 +311,66 @@ export default function SubmissionPage({ onScanCompleted }) {
                 rows={18}
                 spellCheck={false}
                 className="w-full resize-y rounded-xl border border-slate-700 bg-slate-950/70 p-4 font-mono text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10"
-                placeholder={`Paste your source code here...
-
-Example:
-const API_KEY = "your-secret-key";`}
+                placeholder={`Paste your source code here...\n\nExample:\nconst API_KEY = "your-secret-key";`}
               />
             </div>
           )}
 
-          {/* Repository URL */}
-          {mode === "url" && (
-            <div>
-              <div className="mb-2">
+          {/* Repository */}
+          {mode === "repository" && (
+            <div className="space-y-6">
+              {/* Public repository */}
+              <div>
                 <label className="text-sm font-medium text-slate-200">
-                  Git repository URL
+                  Public repository
                 </label>
+
                 <p className="mt-1 text-xs text-slate-500">
-                  Enter the URL of the repository you want to scan.
+                  Enter a public Git repository URL to scan it directly.
                 </p>
-              </div>
 
-              <div className="relative">
-                <GitBranch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <div className="relative mt-3">
+                  <GitBranch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
 
-                <input
-                  type="url"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950/70 py-3 pl-12 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10"
-                  placeholder="https://github.com/owner/repository"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* GitHub App */}
-          {mode === "github" && (
-            <div className="space-y-5">
-              {checkingGithub ? (
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking GitHub connection...
+                  <input
+                    type="url"
+                    value={repoUrl}
+                    onChange={(e) => {
+                      setRepoUrl(e.target.value);
+                      setSelectedGithubRepo(null);
+                    }}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950/70 py-3 pl-12 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10"
+                    placeholder="https://github.com/owner/repository"
+                  />
                 </div>
-              ) : !githubConnected ? (
-                <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-5">
-                  <p className="text-sm text-slate-300">
-                    Connect your GitHub account to scan your private
-                    repositories.
-                  </p>
+              </div>
 
-                  <p className="mt-2 text-xs text-slate-500">
-                    You will choose which repositories SecretScan can access on
-                    GitHub.
-                  </p>
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-700" />
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-slate-700" />
+              </div>
 
+              {/* Private GitHub */}
+              <div>
+                <label className="text-sm font-medium text-slate-200">
+                  Private GitHub repository
+                </label>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Connect your GitHub account to scan repositories that require
+                  authentication.
+                </p>
+
+                {checkingGithub ? (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking GitHub connection...
+                  </div>
+                ) : !githubConnected ? (
                   <button
                     type="button"
                     onClick={connectGithub}
@@ -377,14 +378,9 @@ const API_KEY = "your-secret-key";`}
                   >
                     Connect GitHub
                   </button>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-200">
-                      Repository
-                    </label>
-
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {/* Repository selector */}
                     {loadingGithubRepos ? (
                       <div className="flex items-center gap-2 text-sm text-slate-400">
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,55 +388,69 @@ const API_KEY = "your-secret-key";`}
                       </div>
                     ) : githubRepos.length === 0 ? (
                       <p className="text-sm text-slate-500">
-                        No repositories found for this installation.
+                        No repositories found for this GitHub account.
                       </p>
                     ) : (
-                      <select
-                        value={selectedGithubRepo?.full_name ?? ""}
-                        onChange={(e) =>
-                          setSelectedGithubRepo(
-                            githubRepos.find(
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">
+                          Repository
+                        </label>
+
+                        <select
+                          value={selectedGithubRepo?.full_name ?? ""}
+                          onChange={(e) => {
+                            const repo = githubRepos.find(
                               (repo) => repo.full_name === e.target.value,
-                            ) || null,
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
-                      >
-                        <option value="">Select a repository...</option>
-                        {githubRepos.map((repo) => (
-                          <option key={repo.full_name} value={repo.full_name}>
-                            {repo.full_name}
-                            {repo.private ? " (private)" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <button
-                          type="button"
-                          onClick={handleDisconnect}
-                          className="text-xs text-slate-400 hover:text-red-400 transition"
+                            );
+
+                            setSelectedGithubRepo(repo || null);
+                            setRepoUrl("");
+                          }}
+                          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500/60"
                         >
-                          Disconnect GitHub
-                        </button>
+                          <option value="">Select a repository...</option>
+
+                          {githubRepos.map((repo) => (
+                            <option
+                              key={repo.full_name}
+                              value={repo.full_name}
+                            >
+                              {repo.full_name}
+                              {repo.private ? " (private)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Branch */}
+                    {selectedGithubRepo && (
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">
+                          Branch
+                        </label>
+
+                        <input
+                          type="text"
+                          value={githubBranch}
+                          onChange={(e) => setGithubBranch(e.target.value)}
+                          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500/60"
+                          placeholder="main"
+                        />
+                      </div>
+                    )}
+
+                    {/* Disconnect */}
+                    <button
+                      type="button"
+                      onClick={handleDisconnect}
+                      className="text-xs text-slate-400 transition hover:text-red-400"
+                    >
+                      Disconnect GitHub
+                    </button>
                   </div>
-
-                  {selectedGithubRepo && (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-200">
-                        Branch
-                      </label>
-
-                      <input
-                        type="text"
-                        value={githubBranch}
-                        onChange={(e) => setGithubBranch(e.target.value)}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500/60"
-                        placeholder="main"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -474,6 +484,7 @@ const API_KEY = "your-secret-key";`}
                 <input
                   type="file"
                   accept=".zip,application/zip"
+                  onClick={(e) => (e.target.value = null)}
                   onChange={(e) => setZipFile(e.target.files?.[0] ?? null)}
                   className="hidden"
                 />
@@ -487,7 +498,7 @@ const API_KEY = "your-secret-key";`}
               <label className="text-sm font-medium text-slate-200">
                 Local folder
               </label>
-              <p className="mt-1 mb-2 text-xs text-slate-500">
+              <p className="mb-2 mt-1 text-xs text-slate-500">
                 Select a folder — every file inside (recursively) will be
                 scanned.
               </p>
@@ -496,6 +507,7 @@ const API_KEY = "your-secret-key";`}
                 webkitdirectory="true"
                 directory="true"
                 multiple
+                onClick={(e) => (e.target.value = null)}
                 onChange={(e) =>
                   setMultiFiles(Array.from(e.target.files || []))
                 }
@@ -515,12 +527,13 @@ const API_KEY = "your-secret-key";`}
               <label className="text-sm font-medium text-slate-200">
                 Individual files
               </label>
-              <p className="mt-1 mb-2 text-xs text-slate-500">
+              <p className="mb-2 mt-1 text-xs text-slate-500">
                 Hold Ctrl/Cmd to select multiple files.
               </p>
               <input
                 type="file"
                 multiple
+                onClick={(e) => (e.target.value = null)}
                 onChange={(e) =>
                   setMultiFiles(Array.from(e.target.files || []))
                 }
