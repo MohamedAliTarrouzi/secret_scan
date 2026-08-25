@@ -30,7 +30,7 @@ def download_and_scan_github(github_url: str, branch: str = "main", token: str |
     
     #GitHub API endpoint.
     # This works for both public and private repositories.
-    {}
+
     zip_download_url = (f"{GITHUP_API_URL}/repos/{owner}/{repo}/zipball/{branch}")
     
     headers = {"Accept":"application/vnd.github+json"}
@@ -41,6 +41,11 @@ def download_and_scan_github(github_url: str, branch: str = "main", token: str |
         
     print(f"Downloading repository {owner}/{repo} (branche: {branch})...")
     response = requests.get(zip_download_url,headers=headers,timeout=60)
+    #Personal access token errors handling
+    if response.status_code == 401:
+        raise Exception("Invalid or expired GitHub token.")
+    if response.status_code == 403:
+        raise Exception("Token lacks access to this repository (check scopes/SSO authorization).")
     
     #If "main" doesn't exist, try "master"
     if response.status_code == 404 and branch == "main":
@@ -49,6 +54,11 @@ def download_and_scan_github(github_url: str, branch: str = "main", token: str |
         response = requests.get(zip_download_url,headers=headers,timeout=60)
         
     if response.status_code != 200:
+        if token and response.status_code == 404:
+            raise Exception(
+                "Repository not found, or your token doesn't have access to it "
+                "(private repos return 404 instead of 403 for tokens without access)."
+            )
         raise Exception(f"Unable to download repository. HTTP Code: {response.status_code}")
     
     print(f"Repository {owner}/{repo} downloaded successfully.")

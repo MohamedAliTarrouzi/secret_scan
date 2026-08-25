@@ -4,8 +4,8 @@ from app.services.archive_scanner import scan_zip, scan_tar, scan_files
 from app.services.github_scanner import download_and_scan_github
 from app.services.llm_engine import review_ambiguous_findings
 
-def orchestrate_scan(target:str, content: str | None = None):
-    findings = _run_regex_scan(target,content)
+def orchestrate_scan(target:str, content: str | None = None, github_token: str | None = None):
+    findings = _run_regex_scan(target,content,github_token)
     return review_ambiguous_findings(findings)
 
 def scan_directory(dir_path: str):
@@ -22,7 +22,7 @@ def scan_directory(dir_path: str):
     return scan_files(entries)
                 
 
-def _run_regex_scan(target: str, content: str | None = None):
+def _run_regex_scan(target: str, content: str | None = None, github_token: str | None = None):
     # Cas 1: Inline (Code)
     if target == "inline":
         if not content:
@@ -32,7 +32,7 @@ def _run_regex_scan(target: str, content: str | None = None):
     # Cas 2 : C'est une URL GitHub
     if target.startswith("http://") or target.startswith("https://"):
         if "github.com" in target:
-            return download_and_scan_github(target)
+            return download_and_scan_github(target,token=github_token)
         else:
             raise ValueError("Seules les URLs GitHub sont supportées pour le moment.")
             

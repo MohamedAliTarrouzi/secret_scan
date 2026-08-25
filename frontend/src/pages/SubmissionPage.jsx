@@ -51,6 +51,7 @@ export default function SubmissionPage({ onScanCompleted }) {
   const [multiFiles, setMultiFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [githubPat, setGithubPat] = useState("");
 
   const [githubConnected, setGithubConnected] = useState(false);
   const [checkingGithub, setCheckingGithub] = useState(false);
@@ -98,6 +99,7 @@ export default function SubmissionPage({ onScanCompleted }) {
     setError(null);
     setZipFile(null);
     setMultiFiles([]);
+    setGithubPat("");
   };
 
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function SubmissionPage({ onScanCompleted }) {
       .catch(() => {
         setGithubConnected(false);
       })
-      .finally(() => setCheckingGithub(false));
+      .finally(() =>setCheckingGithub(false));
   }, [mode]);
 
   useEffect(() => {
@@ -227,7 +229,7 @@ export default function SubmissionPage({ onScanCompleted }) {
         const payload =
           mode === "code"
             ? { target: "inline", content: code }
-            : { target: repoUrl };
+            : { target: repoUrl, github_token: githubPat || undefined };
 
         const resp = await runScan(payload);
         json = resp.data;
@@ -238,6 +240,7 @@ export default function SubmissionPage({ onScanCompleted }) {
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
+      setGithubPat("");
     }
   };
 
@@ -348,14 +351,15 @@ export default function SubmissionPage({ onScanCompleted }) {
                 <label className="text-sm font-medium text-slate-200">
                   Public repository
                 </label>
-
                 <p className="mt-1 text-xs text-slate-500">
-                  Enter a public Git repository URL to scan it directly.
+                  Enter a repository URL. To scan a <strong>private</strong>{" "}
+                  repo you don't own via the GitHub App below, paste a personal
+                  access token with <code>repo</code> scope — it's sent with
+                  this request only and is never stored.
                 </p>
 
                 <div className="relative mt-3">
                   <GitBranch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
-
                   <input
                     type="url"
                     value={repoUrl}
@@ -367,6 +371,15 @@ export default function SubmissionPage({ onScanCompleted }) {
                     placeholder="https://github.com/owner/repository"
                   />
                 </div>
+
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={githubPat}
+                  onChange={(e) => setGithubPat(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10"
+                  placeholder="Personal access token (optional, for private repos)"
+                />
               </div>
 
               {/* Divider */}
@@ -429,16 +442,14 @@ export default function SubmissionPage({ onScanCompleted }) {
 
                             setSelectedGithubRepo(repo || null);
                             setRepoUrl("");
+                            setGithubPat("");
                           }}
                           className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500/60"
                         >
                           <option value="">Select a repository...</option>
 
                           {githubRepos.map((repo) => (
-                            <option
-                              key={repo.full_name}
-                              value={repo.full_name}
-                            >
+                            <option key={repo.full_name} value={repo.full_name}>
                               {repo.full_name}
                               {repo.private ? " (private)" : ""}
                             </option>

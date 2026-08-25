@@ -31,6 +31,7 @@ BACKUP_PATTERNS_PATH = BASE_DIR / "data" / "regex_patterns.backup.json"
 class ScanRequest(BaseModel):
     target: str
     content: str | None = None
+    github_token: str | None = None #ad-hoc PAT, never persisted
 
 class RegexPatternsPayload(BaseModel):
     patterns: list[dict]
@@ -162,7 +163,7 @@ async def run_scan(payload: ScanRequest, db: Session = Depends(get_db)):
                 raise ValueError("Le contenu inline est vide")
             findings = orchestrate_scan("inline", content=payload.content)
         else:
-            findings = orchestrate_scan(payload.target)
+            findings = orchestrate_scan(payload.target, github_token=payload.github_token)
             
         return _build_scan_response(db, payload.target, findings)
     except Exception as exc:
