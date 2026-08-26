@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState } from "react";
 import {
   History as HistoryIcon,
   ChevronDown,
@@ -6,29 +6,23 @@ import {
   Search,
   Trash2,
   X,
-} from "lucide-react"
+} from "lucide-react";
 
-import FindingItem from "../components/FindingItem"
-import FindingsFilterBar from "../components/FindingsFilterBar"
-import {
-  extractCategories,
-  filterFindings,
-} from "../utils/findingsFilter"
+import FindingItem from "../components/FindingItem";
+import FindingsFilterBar from "../components/FindingsFilterBar";
+import { extractCategories, filterFindings } from "../utils/findingsFilter";
 
-import {
-  deleteHistoryItem,
-  deleteAllHistory,
-} from "../services/api"
+import { deleteHistoryItem, deleteAllHistory } from "../services/api";
 
 const STATUS_STYLES = {
   BLOCKED: "bg-red-500/10 text-red-300",
   WARNING: "bg-amber-500/10 text-amber-300",
   INFO: "bg-emerald-500/10 text-emerald-300",
-}
+};
 
 function statusKeyOf(pipelineMessage) {
-  const prefix = (pipelineMessage || "").split(":")[0]?.trim()
-  return STATUS_STYLES[prefix] ? prefix : null
+  const prefix = (pipelineMessage || "").split(":")[0]?.trim();
+  return STATUS_STYLES[prefix] ? prefix : null;
 }
 
 /**
@@ -36,19 +30,16 @@ function statusKeyOf(pipelineMessage) {
  * Collapsed by default and expandable to show its findings.
  */
 function HistoryEntry({ item, onDelete }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState("")
-  const [activeSeverities, setActiveSeverities] = useState([])
-  const [activeCategory, setActiveCategory] = useState("all")
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeSeverities, setActiveSeverities] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSource, setActiveSource] = useState("all");
+  const findings = item.findings || [];
+  const summary = item.summary || {};
+  const statusKey = statusKeyOf(item.pipeline_message);
 
-  const findings = item.findings || []
-  const summary = item.summary || {}
-  const statusKey = statusKeyOf(item.pipeline_message)
-
-  const categories = useMemo(
-    () => extractCategories(findings),
-    [findings],
-  )
+  const categories = useMemo(() => extractCategories(findings), [findings]);
 
   const filtered = useMemo(
     () =>
@@ -56,17 +47,16 @@ function HistoryEntry({ item, onDelete }) {
         search,
         severities: activeSeverities,
         category: activeCategory,
+        source: activeSource,
       }),
-    [findings, search, activeSeverities, activeCategory],
-  )
+    [findings, search, activeSeverities, activeCategory, activeSource],
+  );
 
   const toggleSeverity = (sev) => {
     setActiveSeverities((prev) =>
-      prev.includes(sev)
-        ? prev.filter((s) => s !== sev)
-        : [...prev, sev],
-    )
-  }
+      prev.includes(sev) ? prev.filter((s) => s !== sev) : [...prev, sev],
+    );
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900/70">
@@ -92,9 +82,7 @@ function HistoryEntry({ item, onDelete }) {
           className="min-w-0 flex-1 text-left"
         >
           <div className="flex flex-wrap items-center gap-3">
-            <p className="truncate font-medium text-white">
-              {item.target}
-            </p>
+            <p className="truncate font-medium text-white">{item.target}</p>
 
             {statusKey && (
               <span
@@ -111,9 +99,7 @@ function HistoryEntry({ item, onDelete }) {
           <span>Total: {summary.total || 0}</span>
 
           {summary.critical > 0 && (
-            <span className="text-red-400">
-              Critical: {summary.critical}
-            </span>
+            <span className="text-red-400">Critical: {summary.critical}</span>
           )}
 
           {summary.ambiguous > 0 && (
@@ -140,9 +126,7 @@ function HistoryEntry({ item, onDelete }) {
         <span>Total: {summary.total || 0}</span>
 
         {summary.critical > 0 && (
-          <span className="text-red-400">
-            Critical: {summary.critical}
-          </span>
+          <span className="text-red-400">Critical: {summary.critical}</span>
         )}
 
         {summary.ambiguous > 0 && (
@@ -169,6 +153,8 @@ function HistoryEntry({ item, onDelete }) {
                 categories={categories}
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
+                activeSource={activeSource}
+                onSourceChange={setActiveSource}
                 resultCount={filtered.length}
                 totalCount={findings.length}
               />
@@ -192,103 +178,89 @@ function HistoryEntry({ item, onDelete }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default function HistoryPage({
-  items,
-  onHistoryChanged,
-}) {
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [deletingId, setDeletingId] = useState(null)
-  const [clearing, setClearing] = useState(false)
-  const [error, setError] = useState("")
+export default function HistoryPage({ items, onHistoryChanged }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState("");
 
-  const list = items || []
+  const list = items || [];
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = search.trim().toLowerCase();
 
     return list.filter((item) => {
       if (
         statusFilter !== "all" &&
         statusKeyOf(item.pipeline_message) !== statusFilter
       ) {
-        return false
+        return false;
       }
 
-      if (!q) return true
+      if (!q) return true;
 
-      return (item.target || "")
-        .toLowerCase()
-        .includes(q)
-    })
-  }, [list, search, statusFilter])
+      return (item.target || "").toLowerCase().includes(q);
+    });
+  }, [list, search, statusFilter]);
 
   const handleDelete = async (item) => {
     const confirmed = window.confirm(
       `Delete this scan from history?\n\n${item.target}`,
-    )
+    );
 
-    if (!confirmed) return
+    if (!confirmed) return;
 
     try {
-      setError("")
-      setDeletingId(item.id)
+      setError("");
+      setDeletingId(item.id);
 
-      await deleteHistoryItem(item.id)
+      await deleteHistoryItem(item.id);
 
       if (onHistoryChanged) {
-        await onHistoryChanged()
+        await onHistoryChanged();
       }
     } catch (err) {
-      console.error(
-        "Failed to delete history item:",
-        err,
-      )
+      console.error("Failed to delete history item:", err);
 
       setError(
         err?.response?.data?.detail ||
           "Failed to delete this scan from history.",
-      )
+      );
     } finally {
-      setDeletingId(null)
+      setDeletingId(null);
     }
-  }
+  };
 
   const handleClearHistory = async () => {
-    if (list.length === 0) return
+    if (list.length === 0) return;
 
     const confirmed = window.confirm(
       "Clear the entire scan history?\n\nThis action cannot be undone.",
-    )
+    );
 
-    if (!confirmed) return
+    if (!confirmed) return;
 
     try {
-      setError("")
-      setClearing(true)
+      setError("");
+      setClearing(true);
 
-      await deleteAllHistory()
+      await deleteAllHistory();
 
       if (onHistoryChanged) {
-        await onHistoryChanged()
+        await onHistoryChanged();
       }
     } catch (err) {
-      console.error(
-        "Failed to clear history:",
-        err,
-      )
+      console.error("Failed to clear history:", err);
 
-      setError(
-        err?.response?.data?.detail ||
-          "Failed to clear scan history.",
-      )
+      setError(err?.response?.data?.detail || "Failed to clear scan history.");
     } finally {
-      setClearing(false)
+      setClearing(false);
     }
-  }
+  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -306,9 +278,7 @@ export default function HistoryPage({
               </h2>
 
               <p className="text-sm text-slate-500">
-                {list.length}{" "}
-                {list.length === 1 ? "scan" : "scans"}{" "}
-                recorded
+                {list.length} {list.length === 1 ? "scan" : "scans"} recorded
               </p>
             </div>
           </div>
@@ -323,9 +293,7 @@ export default function HistoryPage({
             >
               <Trash2 className="h-4 w-4" />
 
-              {clearing
-                ? "Clearing..."
-                : "Clear history"}
+              {clearing ? "Clearing..." : "Clear history"}
             </button>
           )}
         </div>
@@ -336,13 +304,9 @@ export default function HistoryPage({
             <X className="mt-0.5 h-4 w-4 shrink-0" />
 
             <div>
-              <p className="font-medium">
-                Action failed
-              </p>
+              <p className="font-medium">Action failed</p>
 
-              <p className="mt-1 text-red-300/80">
-                {error}
-              </p>
+              <p className="mt-1 text-red-300/80">{error}</p>
             </div>
           </div>
         )}
@@ -352,9 +316,7 @@ export default function HistoryPage({
           <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-6 text-center">
             <HistoryIcon className="mx-auto mb-3 h-8 w-8 text-slate-600" />
 
-            <p className="text-slate-300">
-              No scans recorded yet.
-            </p>
+            <p className="text-slate-300">No scans recorded yet.</p>
 
             <p className="mt-1 text-sm text-slate-500">
               Your completed scans will appear here.
@@ -370,9 +332,7 @@ export default function HistoryPage({
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
+                  onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by target (file, URL, or repo)..."
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                 />
@@ -380,26 +340,16 @@ export default function HistoryPage({
 
               <select
                 value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
+                onChange={(e) => setStatusFilter(e.target.value)}
                 className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
               >
-                <option value="all">
-                  All statuses
-                </option>
+                <option value="all">All statuses</option>
 
-                <option value="BLOCKED">
-                  Blocked
-                </option>
+                <option value="BLOCKED">Blocked</option>
 
-                <option value="WARNING">
-                  Warning
-                </option>
+                <option value="WARNING">Warning</option>
 
-                <option value="INFO">
-                  Info
-                </option>
+                <option value="INFO">Info</option>
               </select>
             </div>
 
@@ -423,5 +373,5 @@ export default function HistoryPage({
         )}
       </div>
     </div>
-  )
+  );
 }
