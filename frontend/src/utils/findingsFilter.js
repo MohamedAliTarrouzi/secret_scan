@@ -8,13 +8,33 @@ export const SEVERITIES = ["Critical","Medium","Low","Ambiguous"]
  * - category: "all" or a specific category string.
  */
 
-export function filterFindings(findings,{ search = "", severities = [], category = "all"} = {}){
+
+export const SOURCES = [
+  { id: "all", label: "All" },
+  { id: "regex", label: "Regex only" },
+  { id: "llm", label: "Regex + LLM" },
+]
+
+/**
+ * A finding was sent through the LLM layer if it has a verdict OR a
+ * technical error recorded (llm_error is set even when llm_verdict stays
+ * null, e.g. missing API key or timeout) — either way it was attempted.
+ * Findings that were never Ambiguous skip the LLM entirely and have both
+ * fields null.
+ */
+
+export function findingSource(f) {
+  return f.llm_verdict != null || f.llm_error != null ? "llm" : "regex"
+}
+
+export function filterFindings(findings,{ search = "", severities = [], category = "all",  source = "all"} = {}){
     const list = findings || []
     const q = search.trim().toLowerCase()
 
     return list.filter((f)=>{
         if(severities.length > 0 && !severities.includes(f.severity)) return false
         if(category!=="all" && f.category !==category) return false
+        if(source !== "all" && findingSource(f) !== source) return false
 
         if(!q) return true
         const haystack = [

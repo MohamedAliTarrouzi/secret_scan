@@ -1,5 +1,5 @@
 import { Search, X } from "lucide-react"
-import { SEVERITIES } from "../utils/findingsFilter"
+import { SEVERITIES, SOURCES } from "../utils/findingsFilter"
 
 export default function FindingsFilterBar({
   search,
@@ -9,17 +9,20 @@ export default function FindingsFilterBar({
   categories = [],
   activeCategory = "all",
   onCategoryChange,
+  activeSource = "all",
+  onSourceChange,
   placeholder = "Search by name, file, value, or LLM verdict...",
   resultCount,
   totalCount,
 }) {
   const hasActiveFilters =
-    search.trim().length > 0 || activeSeverities.length > 0 || activeCategory !== "all"
+    search.trim().length > 0 || activeSeverities.length > 0 || activeCategory !== "all" || activeSource !== "all"
 
   const clearAll = () => {
     onSearchChange("")
     activeSeverities.forEach((sev) => onToggleSeverity(sev))
     onCategoryChange?.("all")
+    onSourceChange?.("all")
   }
 
   return (
@@ -46,6 +49,20 @@ export default function FindingsFilterBar({
             {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {onSourceChange && (
+          <select
+            value={activeSource}
+            onChange={(e) => onSourceChange(e.target.value)}
+            className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          >
+            {SOURCES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.id === "all" ? "All sources" : s.label}
               </option>
             ))}
           </select>

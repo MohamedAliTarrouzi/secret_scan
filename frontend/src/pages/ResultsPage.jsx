@@ -8,6 +8,7 @@ export default function ResultsPage({ result }) {
   const [search, setSearch] = useState("")
   const [activeSeverities, setActiveSeverities] = useState([])
   const [activeCategory, setActiveCategory] = useState("all")
+  const [activeSource, setActiveSource] = useState("all")
 
   const findings = result?.findings || []
 
@@ -19,8 +20,9 @@ export default function ResultsPage({ result }) {
         search,
         severities: activeSeverities,
         category: activeCategory,
+        source: activeSource,
       }),
-    [findings, search, activeSeverities, activeCategory],
+    [findings, search, activeSeverities, activeCategory, activeSource],
   )
 
   const toggleSeverity = (sev) => {
@@ -93,6 +95,8 @@ export default function ResultsPage({ result }) {
               categories={categories}
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}
+              activeSource={activeSource}
+              onSourceChange={setActiveSource}
               resultCount={filtered.length}
               totalCount={findings.length}
             />
