@@ -5,7 +5,7 @@ import { Shield, Search, History as HistoryIcon, Braces, GitBranch} from "lucide
 import SubmissionPage from "./pages/SubmissionPage";
 import ResultsPage from "./pages/ResultsPage";
 import HistoryPage from "./pages/HistoryPage";
-import RegexPatternsPage from "./pages/RegexPatternsPages";
+import RegexPatternsPage from "./pages/RegexPatternsPage";
 import { getHistory } from "./services/api";
 
 
