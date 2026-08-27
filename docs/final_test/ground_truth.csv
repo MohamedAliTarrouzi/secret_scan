@@ -1,0 +1,41 @@
+repo,commit,file,line,expected_secret,expected_category,expected_name
+final_test,HEAD,test_payload.txt,2,true,Cloud credentials,AWS Access Key ID
+final_test,HEAD,test_payload.txt,3,true,Cloud credentials,AWS Secret Access Key
+final_test,HEAD,test_payload.txt,4,true,Cloud credentials,Azure SAS Token
+final_test,HEAD,test_payload.txt,5,true,Cloud credentials,GCP API Key
+final_test,HEAD,test_payload.txt,6,true,API tokens,GitHub Personal Access Token (Classic)
+final_test,HEAD,test_payload.txt,7,true,API tokens,GitHub Personal Access Token (Fine-grained)
+final_test,HEAD,test_payload.txt,8,true,API tokens,GitLab Personal Access Token
+final_test,HEAD,test_payload.txt,9,true,API tokens,OpenAI API Key
+final_test,HEAD,test_payload.txt,10,true,API tokens,Anthropic API Key
+final_test,HEAD,test_payload.txt,11,true,API tokens,Hugging Face Access Token
+final_test,HEAD,test_payload.txt,12,true,API tokens,Stripe API Key
+final_test,HEAD,test_payload.txt,13,true,API tokens,Slack Webhook URL
+final_test,HEAD,test_payload.txt,14,true,API tokens,Discord Bot Token
+final_test,HEAD,test_payload.txt,15,true,API tokens,Heroku API Key
+final_test,HEAD,test_payload.txt,16,true,Authentication,Private Key Header
+final_test,HEAD,test_payload.txt,17,true,Authentication,JSON Web Token (JWT)
+final_test,HEAD,test_payload.txt,18,true,Generic,Database Connection String
+final_test,HEAD,test_payload.txt,19,true,Generic,Generic Password Assignment
+final_test,HEAD,test_payload.txt,21,true,API tokens,npm Access Token
+final_test,HEAD,test_payload.txt,22,true,API tokens,SendGrid API Key
+final_test,HEAD,test_payload.txt,23,true,API tokens,Twilio Account SID
+final_test,HEAD,test_payload.txt,24,true,API tokens,Slack Bot Token
+final_test,HEAD,test_payload.txt,25,true,Authentication,Google OAuth Client Secret
+final_test,HEAD,test_payload.txt,27,true,Authentication,Private Key Header
+final_test,HEAD,test_payload.txt,33,false,Generic,Allowlist False Positive (Env Var Interpolation)
+final_test,HEAD,test_payload.txt,34,false,Generic,Allowlist False Positive (Jinja Template)
+final_test,HEAD,test_payload.txt,35,false,Cloud credentials,Allowlist False Positive (Low Entropy Dummy)
+final_test,HEAD,test_payload.txt,36,false,Generic,Allowlist False Positive (Boolean Value)
+final_test,HEAD,test_payload.txt,37,false,Generic,Allowlist False Positive (Windows Env Var)
+final_test,HEAD,test_payload.txt,38,false,Generic,Allowlist False Positive (Git Empty-Tree Hash)
+final_test,HEAD,test_payload.txt,39,false,Cloud credentials,Allowlist False Positive (Known AWS Doc Example Key)
+final_test,HEAD,test_payload.txt,41,false,Cloud credentials,Invalid Match (Too Short AWS Key)
+final_test,HEAD,test_payload.txt,42,false,Cloud credentials,Invalid Match (Too Short GCP Key)
+final_test,HEAD,test_payload.txt,43,false,API tokens,False Positive (Low Entropy UUID)
+final_test,HEAD,test_payload.txt,44,false,Generic,False Positive (Low Entropy Common Password)
+final_test,HEAD,test_payload.txt,46,true,API tokens,Obfuscated (Base64 OpenAI API Key)
+final_test,HEAD,test_payload.txt,47,true,Generic,Obfuscated (URL Encoded DB Connection)
+final_test,HEAD,test_payload.txt,48,true,API tokens,Obfuscated (Concatenated GitHub PAT)
+final_test,HEAD,test_payload.txt,49,true,API tokens,Obfuscated (Hex Encoded Stripe Key)
+final_test,HEAD,test_payload.txt,50,true,API tokens,Obfuscated (Reversed GitLab PAT)

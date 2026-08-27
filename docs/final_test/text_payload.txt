@@ -1,0 +1,50 @@
+# --- SECTION 1: Standard True Positives ---
+AWS_KEY="AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+AZURE_SAS="https://mystorage.blob.core.windows.net/data?sig=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+GCP_KEY="AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p67"
+GITHUB_CLASSIC="ghp_1234567890abcdefghijklmnopqrstuvwxyz"
+GITHUB_FINE="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"
+GITLAB_PAT="glpat-1234567890abcdefghij"
+OPENAI_KEY="sk-proj-1234567890abcdefghijklmnopqrstuvwxyz"
+ANTHROPIC_KEY="sk-ant-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ12345678901234567890"
+HF_TOKEN="hf_QoXsf2o3gyrDO1xkxwnQrS7RPeMOkIUpkD"
+STRIPE_KEY="sk_live_1234567890abcdefghijklmnopqrstuv"
+SLACK_WEBHOOK="https://hooks.slack.com/services/T12345678/B12345678/1234567890abcdefghijklmn"
+DISCORD_TOKEN="Myr7OSJoRu1XXdo0cZuzren68.K4TunP.Fz46PDjqipVJIqVLB5LzxoiGFfWd3hj"
+HEROKU_KEY="12345678-abcd-1234-abcd-1234567890ab"
+PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----"
+JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+DB_URL="postgresql://admin:SecretPass123!@localhost:5432/mydb"
+GENERIC_PASS="db_password = 'SuperSecretPassword123'"
+# --- SECTION 1b: Additional Real-World Token Shapes ---
+NPM_TOKEN="npm_1234567890abcdefghijklmnopqrstuvwxyz12"
+SENDGRID_KEY="SG.1234567890abcdefghijklmn.1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN"
+TWILIO_SID="AC1234567890abcdef1234567890abcdef"
+SLACK_BOT_TOKEN="xoxb-1234567890123-1234567890123-AbCdEfGhIjKlMnOpQrStUvWx"
+GOOGLE_OAUTH_SECRET="GOCSPX-1234567890abcdefghijklmnopqrst"
+FULL_PEM = """
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA1c7+9z5Pad7OejecsQ0bu3aumizeoQuXAWDDoxNJ7LICmw6D
+yv1v9jd9d9d9EXAMPLEBLOCKONLYNOTREALKEYDATAxxxxxxxxxxxxxxxxxxxxx
+-----END RSA PRIVATE KEY-----
+"""
+# --- SECTION 2: Allowlist Traps (Should NOT be flagged as Real Secrets) ---
+FLAG_ENV="${SECRETS_DB_PASS}"
+FLAG_TEMPLATE="{{ secrets.MY_API_KEY }}"
+FLAG_DUMMY="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+FLAG_BOOL="password = 'true'"
+FLAG_CMD="%PATH%"
+FLAG_GIT_HASH="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+# Example only, see docs: AKIAIOSFODNN7EXAMPLE
+# --- SECTION 3: False Positives & Boundaries ---
+FALSE_AWS_ID="AKIA12345"
+FALSE_GCP="AIzaSyShort"
+UUID_NOT_HEROKU="00000000-0000-0000-0000-000000000000"
+HARDCODED_PUBLIC_VAL="password = 'password123'"
+# --- SECTION 4: Obfuscation & Encoded Secrets (Scanner Regex Misses / LLM Targets) ---
+BASE64_OPENAI="c2stcHJvai0xMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo="
+URL_ENCODED_DB="postgresql%3A%2F%2Fadmin%3ASecretPass123%21%40localhost%3A5432%2Fmydb"
+CONCAT_GITHUB="ghp_" + "1234567890abcdefghijklmnopqrstuvwxyz"
+HEX_STRIPE="736b5f6c6976655f313233343536373839306162636465666768696a6b6c6d6e6f70717273747576"
+REVERSED_GITLAB="jihefgdcba0987654321-taplg"
