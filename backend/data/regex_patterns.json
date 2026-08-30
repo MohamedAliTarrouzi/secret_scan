@@ -148,43 +148,43 @@
     "description": "Hardcoded password or secret key assignment (verification required)."
   },
   {
-  "name": "npm Access Token",
-  "category": "API tokens",
-  "regex": "\\bnpm_[A-Za-z0-9]{36,}\\b",
-  "severity": "Critical",
-  "confidence": 0.95,
-  "description": "npm access token."
+    "name": "npm Access Token",
+    "category": "API tokens",
+    "regex": "\\bnpm_[A-Za-z0-9]{36,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "npm access token."
   },
   {
-  "name": "SendGrid API Key",
-  "category": "API tokens",
-  "regex": "\\bSG\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{40,}\\b",
-  "severity": "Critical",
-  "confidence": 0.95,
-  "description": "SendGrid API key."
+    "name": "SendGrid API Key",
+    "category": "API tokens",
+    "regex": "\\bSG\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{40,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "SendGrid API key."
   },
   {
-  "name": "Twilio Account SID",
-  "category": "API tokens",
-  "regex": "\\bAC[a-fA-F0-9]{32}\\b",
-  "severity": "Medium",
-  "confidence": 0.9,
-  "description": "Twilio Account SID."
+    "name": "Twilio Account SID",
+    "category": "API tokens",
+    "regex": "\\bAC[a-fA-F0-9]{32}\\b",
+    "severity": "Medium",
+    "confidence": 0.9,
+    "description": "Twilio Account SID."
   },
   {
-  "name": "Slack Bot Token",
-  "category": "API tokens",
-  "regex": "\\bxoxb-[0-9A-Za-z-]{20,}\\b",
-  "severity": "Critical",
-  "confidence": 0.95,
-  "description": "Slack bot token."
+    "name": "Slack Bot Token",
+    "category": "API tokens",
+    "regex": "\\bxoxb-[0-9A-Za-z-]{20,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "Slack bot token."
   },
   {
-  "name": "Google OAuth Client Secret",
-  "category": "Authentication",
-  "regex": "\\bGOCSPX-[A-Za-z0-9_-]{20,}\\b",
-  "severity": "Critical",
-  "confidence": 0.95,
-  "description": "Google OAuth client secret."
+    "name": "Google OAuth Client Secret",
+    "category": "Authentication",
+    "regex": "\\bGOCSPX-[A-Za-z0-9_-]{20,}\\b",
+    "severity": "Critical",
+    "confidence": 0.95,
+    "description": "Google OAuth client secret."
   }
 ]

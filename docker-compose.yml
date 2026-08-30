@@ -15,7 +15,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - backend_db:/app/data
+      - backend_db:/app/db_data
       # Adjust the host-side filename to match your actual .pem file in backend/
       - ./backend/secretscan-ai-test.2026-08-21.private-key.pem:/app/secretscan-ai-test.2026-08-21.private-key.pem:ro
     env_file:

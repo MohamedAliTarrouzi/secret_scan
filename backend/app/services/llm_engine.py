@@ -122,7 +122,10 @@ def review_finding(finding: dict)-> dict:
             "_llm_severity": severity,
         }
     except Exception as exc:
-        return _empty_llm_result(model,str(exc))
+         import traceback
+         print(f"[llm_engine] review_finding failed: {exc!r}")
+         traceback.print_exc()
+         return _empty_llm_result(model,str(exc))
     
 def _apply_verdict(finding:dict, llm_result: dict) -> None:
     """Applique la règle de remapping severity/review_required. Mute `finding` en place"""
