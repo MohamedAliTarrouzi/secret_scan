@@ -19,6 +19,12 @@ dist
 dist-ssr
 *.local
 
+# Temporary / Test Dumps
+*.zip
+arborescence.txt
+test.json
+*.docx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
